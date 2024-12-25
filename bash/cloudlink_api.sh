@@ -21,7 +21,7 @@ function clOp() {
     # Expects env: auth_token
 
     curl --header 'Content-Type: application/json' --header "Authorization: Bearer $auth_token" \
-        --request $1 $2
+        --request $1 $2;
 }
 
 function clDataOp() {
@@ -31,6 +31,29 @@ function clDataOp() {
     curl --header 'Content-Type: application/json' --header "Authorization: Bearer $auth_token" \
         --request $1 $2 \
         --data $3
+}
+
+# Auth API
+
+function clAuthOp() {
+    # Executes a curl request with the CL auth_token for the given method ($1) auth resource ($2)
+    # Expects env: auth_token, cloud
+
+    clOp $1 "https://authentication$cloud.api.mitel.io/2017-09-01/$2"
+}
+
+function clAuthDataOp() {
+    # Executes a curl request with the CL auth_token for the given method ($1) auth resource ($2) and data ($3)
+    # Expects env: auth_token, cloud
+
+    clDataOp $1 "https://authentication$cloud.api.mitel.io/2017-09-01/$2" $3
+}
+
+function clAuthPostToken() {
+    # Executes a curl request with the CL auth_token for the grant_type ($1) and params ($2)
+    # Expects env: auth_token, cloud
+
+    clAuthDataOp POST "token" "{\"grant_type\":\"$1\",$2}"
 }
 
 # Admin API
@@ -335,7 +358,8 @@ function clEventHistoryQuery() {
 
 alias odfilter="oDataFilter $@"
 
-alias cltok-g="clOp GET \"https://authentication\${cloud}.api.mitel.io/2017-09-01/token\""
+alias cltok-g="clAuthOp GET token"
+alias cltok-lp="clAuthPostToken password $@"
 
 alias clacc-l="clGetAccounts $@"
 alias clacc-g="clGetAccount $@"
