@@ -56,6 +56,20 @@ function clAuthPostToken() {
     clAuthDataOp POST "token" "{\"grant_type\":\"$1\",$2}"
 }
 
+function clAuthLoginPassword() {
+    # Executes a curl request with the CL auth_token for the username ($1), password ($2), and accountId ($3)
+    # Expects env: auth_token, cloud
+
+    read -r -p $'Enter your username and accountId: \n' uname accid
+    read -r -p $'Enter your password: \n' -s pass
+
+    clAuthPostToken "password" "\"username\":\"$uname\",\"password\":\"$pass\",\"account_id\":\"$accid\"" > token.tmp
+    unset pass uname accid
+    auth_token=$(jq -r '.access_token' token.tmp)
+    rm token.tmp
+    clAuthOp GET token | jq '.'
+}
+
 # Admin API
 
 function clAdminOp() {
@@ -359,7 +373,7 @@ function clEventHistoryQuery() {
 alias odfilter="oDataFilter $@"
 
 alias cltok-g="clAuthOp GET token"
-alias cltok-lp="clAuthPostToken password $@"
+alias cltok-lp="clAuthLoginPassword $@"
 
 alias clacc-l="clGetAccounts $@"
 alias clacc-g="clGetAccount $@"
