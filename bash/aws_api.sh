@@ -72,7 +72,7 @@ function awsQuickSightCreateIngestion() {
 
 alias awsqs-la='aws --profile=$profile quicksight list-analyses --query="AnalysisSummaryList[*].{id:AnalysisId,name:Name,status:Status}" --aws-account-id $@'
 alias awsqs-ga='awsQuickSightGetAnalysis $@'
-alias awsqs-ld='aws --profile=$profile quicksight list-data-sets --query="DataSetSummaries[*].{id:DataSetIdnameName,mode:ImportMode,lastUpdated:LastUpdatedTime}" --aws-account-id $@'
+alias awsqs-ld='aws --profile=$profile quicksight list-data-sets --query="DataSetSummaries[*].{id:DataSetId,name:Name,mode:ImportMode,lastUpdated:LastUpdatedTime}" --aws-account-id $@'
 alias awsqs-li='awsQuickSightGetIngestions $@'
 alias awsqs-cii='awsQuickSightCreateIngestion INCREMENTAL_REFRESH $@'
 alias awsqs-cfi='awsQuickSightCreateIngestion FULL_REFRESH $@'
