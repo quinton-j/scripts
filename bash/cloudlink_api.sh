@@ -148,7 +148,7 @@ function clGetUsersByRole() {
     # Gets the account for the provided accountId ($1)
     # Expects env: auth_token, cloud
 
-    clAdminOp GET "accounts/$1/users$2" | jq  '._embedded.items//[] | group_by(.role) | map({accountId:.[0].accountId,role:.[0].role,users:(. | del(.[].sipPassword)),count: \length })'
+    clAdminOp GET "accounts/$1/users$2" | jq  '._embedded.items//[] | group_by(.role) | map({accountId:.[0].accountId,role:.[0].role,users:(. | del(.[].sipPassword)),count:length })'
 }
 
 function clGetPartner() {
