@@ -140,12 +140,19 @@ alias awsses-dsd='aws sesv2 delete-suppressed-destination --profile=$profile --e
 # DynamoDB
 
 alias awsddb-lt='aws --profile=$profile dynamodb list-tables --query="TableNames"'
-alias awsddb-lt='aws --profile=$profile dynamodb list-tables --query="TableNames"'
-alias awsddb-sa='aws --profile=$profile dynamodb execute-statement --statement="select * from \"$table\""'
-alias awsddb-dr='aws --profile=$profile dynamodb execute-statement --statement="delete from \"$table\" where $column = '\''$value'\''"'
-alias awsddb-ir='aws --profile=$profile dynamodb execute-statement --statement="insert into \"$table\" value $value"'
+alias awsddb-it='aws --profile=$profile dynamodb describe-table --table-name $@'
+alias awsddb-dt='aws --profile=$profile dynamodb delete-table --table-name $@'
+
+alias awsddb-qa='aws --profile=$profile dynamodb execute-statement --statement="select * from \"$table\""'
+alias awsddb-qd='aws --profile=$profile dynamodb execute-statement --statement="delete from \"$table\" where $column = '\''$value'\''"'
+alias awsddb-qi='aws --profile=$profile dynamodb execute-statement --statement="insert into \"$table\" value $value"'
+
 alias awsddb-lb='aws --profile=$profile dynamodb list-backups'
 alias awsddb-cb='aws --profile=$profile dynamodb create-backup --table-name $table --backup-name $@'
-alias awsddb-db='aws --profile=$profile dynamodb describe-backup --backup-arn $table'
+alias awsddb-ib='aws --profile=$profile dynamodb describe-backup --backup-arn $table'
 alias awsddb-db='aws --profile=$profile dynamodb restore-table-from-backup --target-table-name=$table --backup-arn $@'
-alias awsddb-dt='aws --profile=$profile dynamodb delete-table --table-name $@'
+
+# SSM Parameter Store
+
+alias awsssm-lp='aws --profile=$profile ssm describe-parameters'
+alias awsssm-gp='aws --profile=$profile ssm get-parameter --with-decryption --name $@'
