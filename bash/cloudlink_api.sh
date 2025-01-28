@@ -70,6 +70,13 @@ function clAuthLoginPassword() {
     clAuthOp GET token | jq '.'
 }
 
+function clListCredentials() {
+    # Lists the credentials account for the provided accountId ($1)
+    # Expects env: auth_token, cloud
+
+    clAuthOp GET "accounts/$1/credentials"
+}
+
 # Admin API
 
 function clAdminOp() {
@@ -86,15 +93,15 @@ function clAdminDataOp() {
     clDataOp $1 "https://admin$cloud.api.mitel.io/2017-09-01/$2" $3
 }
 
-function clGetAccounts() {
-    # Gets accounts with optional query params ($1)
+function clListAccounts() {
+    # List accounts with optional query params ($1)
     # Expects env: auth_token, cloud
 
     clAdminOp GET "accounts?\$expand=tags$1"
 }
 
-function clGetAccountsContainingName() {
-    # Gets accounts with name variants and optional query params ($1)
+function clListAccountsContainingName() {
+    # List accounts with name variants and optional query params ($1)
     # Expects env: auth_token, cloud
 
     local casedNames=($1 ${1,,} ${1^^} ${1^});
@@ -136,16 +143,16 @@ function clGetAccountByOrganizationId() {
         | jq '._embedded.items[0] | {name,accountId,accountNumber,partnerId,organizationId,sapId:.tags.mitel_connect_refs.sap_references_primary_1}'
 }
 
-function clGetAccountsByPartnerId() {
-    # Gets the accounts for the provided partnerIds ($1)
+function clListAccountsByPartnerId() {
+    # Lists the accounts for the provided partnerIds ($1)
     # Expects env: auth_token, cloud
 
     clAdminOp GET "accounts?\$expand=tags&\$filter=partnerId%20eq%20'$1'" \
         | jq '._embedded.items | map({name,accountId,accountNumber,partnerId,organizationId,sapId:.tags.mitel_connect_refs.sap_references_primary_1,createdOn,createdBy})'
 }
 
-function clGetUsersByRole() {
-    # Gets the account for the provided accountId ($1)
+function clListUsersByRole() {
+    # Lists the account for the provided accountId ($1)
     # Expects env: auth_token, cloud
 
     clAdminOp GET "accounts/$1/users$2" | jq  '._embedded.items//[] | group_by(.role) | map({accountId:.[0].accountId,role:.[0].role,users:(. | del(.[].sipPassword)),count:length })'
@@ -158,8 +165,8 @@ function clGetPartner() {
     clAdminOp GET "partners/$1"
 }
 
-function clGetPartners() {
-    # Gets partners for the provided accountId ($1)
+function clListPartners() {
+    # Lists partners for the provided accountId ($1)
     # Expects env: auth_token, cloud
 
     clAdminOp GET "partners$1"
@@ -172,8 +179,8 @@ function clPutPartner() {
     clAdminDataOp PUT "partners/$1" $2
 }
 
-function clGetPolicies() {
-    # Gets policies in accountId ($1), and optional query params ($2)
+function clListPolicies() {
+    # Lists policies in accountId ($1), and optional query params ($2)
     # Expects env: auth_token, cloud
 
     clAdminOp GET "accounts/$1/policies$2"
@@ -186,8 +193,8 @@ function clGetPolicy() {
     clAdminOp GET "accounts/$1/policies/$2"
 }
 
-function clGetPolicyStatements() {
-    # Gets policy statements for accountId ($1) and policyId ($2)
+function clListPolicyStatements() {
+    # Lists policy statements for accountId ($1) and policyId ($2)
     # Expects env: auth_token, cloud
 
     clAdminOp GET "accounts/$1/policies/$2/statements"
@@ -223,8 +230,8 @@ function clPostChatMicroAccountPolicyStatement() {
     clPostPolicyStatement $1 account $2 $3 '*' "https://mitel.io/auth/conversations/features/$2"
 }
 
-function clGetUsers() {
-    # Gets users for accountId ($1) and optional query params ($2)
+function clListUsers() {
+    # Lists users for accountId ($1) and optional query params ($2)
     # Expects env: auth_token, cloud
 
     clAdminOp GET "accounts/$1/users$2" | jq '._embedded.items//[] | map(del(.sipPassword))'
@@ -278,8 +285,8 @@ function clPatchUsers() {
     clAdminDataOp PATCH "accounts/$1/users" "$data" | jq '.operations//[] | map({statusCode,corrId:.headers."x-mitel-correlation-id",body:(.body | del(.sipPassword))})'
 }
 
-function clGetClients() {
-    # Gets the clients for the provided accountId ($1)
+function clListClients() {
+    # Lists the clients for the provided accountId ($1)
     # Expects env: auth_token, cloud
 
     clAdminOp GET "accounts/$1/clients$2" | jq  '._embedded.items//[]'
@@ -294,8 +301,8 @@ function clGetClient() {
 
 # Director API
 
-function clGetIdentities() {
-    # Gets identities with the id ($1)
+function clListIdentities() {
+    # Lists identities with the id ($1)
     # Expects env: auth_token, cloud
 
     clOp GET "https://director$cloud.api.mitel.io/2018-07-01/identities?\$expand=null$1"
@@ -331,8 +338,8 @@ function clGetConversations() {
     clChatOp GET "conversations$1"
 }
 
-function clGetParticipants() {
-    # Gets participants for the given conversationId ($1)
+function clListParticipants() {
+    # Lists participants for the given conversationId ($1)
     # Expects env: auth_token, cloud
 
     clChatOp GET "conversations/$1/participants"
@@ -374,40 +381,41 @@ alias odfilter="oDataFilter $@"
 
 alias cltok-g="clAuthOp GET token"
 alias cltok-lp="clAuthLoginPassword $@"
+alias clcred-l="clListCredentials $@";
 
-alias clacc-l="clGetAccounts $@"
+alias clacc-l="clListAccounts $@"
 alias clacc-g="clGetAccount $@"
 alias clacc-u="clPutAccount $@"
 alias clacc-d="clDeleteAccount $@"
 alias clpart-g="clGetPartner $@"
-alias clpart-l="clGetPartners $@"
+alias clpart-l="clListPartners $@"
 alias clpart-u="clPutPartner $@"
 alias clacc-gbo="clGetAccountByOrganizationId $@"
-alias clacc-lbp="clGetAccountsByPartnerId $@"
-alias clacc-lbn="clGetAccountsContainingName $@"
+alias clacc-lbp="clListAccountsByPartnerId $@"
+alias clacc-lbn="clListAccountsContainingName $@"
 
-alias clpol-l="clGetPolicies $@"
+alias clpol-l="clListPolicies $@"
 alias clpol-g="clGetPolicy $@"
-alias clstate-l="clGetPolicyStatements $@"
+alias clstate-l="clListPolicyStatements $@"
 alias clstate-g="clGetPolicyStatement $@"
 alias clstate-uc="clPostChatMicroAccountPolicyStatement $@"
 
-alias cluser-l="clGetUsers $@"
-alias cluser-lbr="clGetUsersByRole $@"
+alias cluser-l="clListUsers $@"
+alias cluser-lbr="clListUsersByRole $@"
 alias cluser-g="clGetUser $@"
 alias cluser-u="clPutUser $@"
 alias cluser-d="clDeleteUser $@"
 alias clutag-u="clPutUserTag $@"
 alias clutag-d="clDeleteUserTag $@"
 
-alias clclient-l="clGetClients $@"
+alias clclient-l="clListClients $@"
 alias clclient-g="clGetClient $@"
 
-alias clid-l="clGetIdentities $@"
+alias clid-l="cListIdentities $@"
 
 alias clconv-l='clChatOp GET conversations'
 alias cluconv-l='clChatOp GET users/me/conversations'
-alias clcpart-l="clGetParticipants $@"
+alias clcpart-l="clListParticipants $@"
 alias clcmsg-c="clPostMessageText $@"
 
 alias clehis-l="clEventHistoryQuery $@"
