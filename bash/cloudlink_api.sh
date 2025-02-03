@@ -375,6 +375,15 @@ function clEventHistoryQuery() {
     clAnalyticsOp GET "events-records?\$filter=source%20eq%20'$1'%20and%20subject%20eq%20'$2'%20and%20occurredOn%20gt%20'$3'$4"
 }
 
+# Notifications API
+
+function clNotificationsOp() {
+    # Executes a curl get request with the CL auth_token for the given method ($1) subresource ($2)
+    # Expects env: auth_token, cloud
+
+    clOp $1 "https://notifications$cloud.api.mitel.io/2017-09-01/$2"
+}
+
 # Aliases
 
 alias odfilter="oDataFilter $@"
@@ -419,3 +428,5 @@ alias clcpart-l="clListParticipants $@"
 alias clcmsg-c="clPostMessageText $@"
 
 alias clehis-l="clEventHistoryQuery $@"
+
+alias clsub-l="clNotificationsOp GET subscriptions"
