@@ -420,7 +420,7 @@ alias clutag-d="clDeleteUserTag $@"
 alias clclient-l="clListClients $@"
 alias clclient-g="clGetClient $@"
 
-alias clid-l="cListIdentities $@"
+alias clid-l="clListIdentities $@"
 
 alias clconv-l='clChatOp GET conversations'
 alias cluconv-l='clChatOp GET users/me/conversations'
