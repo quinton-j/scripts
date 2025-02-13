@@ -384,6 +384,22 @@ function clNotificationsOp() {
     clOp $1 "https://notifications$cloud.api.mitel.io/2017-09-01/$2"
 }
 
+# System manager API
+
+function clSysManOp() {
+    # Executes a curl request with the CL auth_token for the given method ($1) system manager resource ($2)
+    # Expects env: auth_token, cloud
+
+    clOp $1 "https://system-manager$cloud.api.mitel.io/2023-07-01/$2"
+}
+
+function clListComponents() {
+    # List accounts with optional query params ($1)
+    # Expects env: auth_token, cloud
+
+    clSysManOp GET "components$1"
+}
+
 # Aliases
 
 alias odfilter="oDataFilter $@"
@@ -430,3 +446,5 @@ alias clcmsg-c="clPostMessageText $@"
 alias clehis-l="clEventHistoryQuery $@"
 
 alias clsub-l="clNotificationsOp GET subscriptions"
+
+alias clcomp-l="clListComponents $@"
