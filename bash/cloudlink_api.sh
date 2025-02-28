@@ -296,7 +296,7 @@ function clGetClient() {
     # Gets the clients for the provided accountId ($1) and clientId ($2)
     # Expects env: auth_token, cloud
 
-    clAdminOp GET "accounts/$1/clients$2"
+    clAdminOp GET "accounts/$1/clients/$2"
 }
 
 # Director API
