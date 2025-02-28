@@ -146,6 +146,7 @@ alias awsddb-dt='aws --profile=$profile dynamodb delete-table --table-name $@'
 alias awsddb-qa='aws --profile=$profile dynamodb execute-statement --statement="select * from \"$table\""'
 alias awsddb-qd='aws --profile=$profile dynamodb execute-statement --statement="delete from \"$table\" where $column = '\''$value'\''"'
 alias awsddb-qi='aws --profile=$profile dynamodb execute-statement --statement="insert into \"$table\" value $value"'
+alias awsddb-qu='aws --profile=$profile dynamodb execute-statement --statement="update \"$table\" set $value where $condition returning all new *'
 
 alias awsddb-lb='aws --profile=$profile dynamodb list-backups'
 alias awsddb-cb='aws --profile=$profile dynamodb create-backup --table-name $table --backup-name $@'
