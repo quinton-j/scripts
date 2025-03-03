@@ -157,3 +157,8 @@ alias awsddb-db='aws --profile=$profile dynamodb restore-table-from-backup --tar
 
 alias awsssm-lp='aws --profile=$profile ssm describe-parameters'
 alias awsssm-gp='aws --profile=$profile ssm get-parameter --with-decryption --name $@'
+
+# Codepipline
+
+alias awscpipe-l='aws --profile=$profile codepipeline list-pipelines'
+
