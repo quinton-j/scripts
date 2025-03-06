@@ -77,6 +77,20 @@ function clListCredentials() {
     clAuthOp GET "accounts/$1/credentials"
 }
 
+function clListApplications() {
+    # Lists the applications
+    # Expects env: auth_token, cloud
+
+    clAuthOp GET "apps$1"
+}
+
+function clGetApplicationById() {
+    # Gets the application for the provided id ($1)
+    # Expects env: auth_token, cloud
+
+    clAuthOp GET "applications/$1"
+}
+
 # Admin API
 
 function clAdminOp() {
@@ -448,3 +462,6 @@ alias clehis-l="clEventHistoryQuery $@"
 alias clsub-l="clNotificationsOp GET subscriptions"
 
 alias clcomp-l="clListComponents $@"
+
+alias clapp-l="clListApplications $@"
+alias clapp-g="clGetApplicationById $@"
