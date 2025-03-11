@@ -345,6 +345,13 @@ function clChatDataOp() {
     clChatDataOp POST $1 $2
 }
 
+function clGetChatAccountById() {
+    # Gets chat cached account record for the given accountId ($1)
+    # Expects env: auth_token, cloud
+
+    clChatOp GET "accounts/$1"
+}
+
 function clGetConversations() {
     # Gets user conversations for the logged in user
     # Expects env: auth_token, cloud
@@ -456,6 +463,7 @@ alias clconv-l='clChatOp GET conversations'
 alias cluconv-l='clChatOp GET users/me/conversations'
 alias clcpart-l="clListParticipants $@"
 alias clcmsg-c="clPostMessageText $@"
+alias clcacc-g="clGetChatAccountById $@"
 
 alias clehis-l="clEventHistoryQuery $@"
 
