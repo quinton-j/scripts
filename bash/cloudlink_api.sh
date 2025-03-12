@@ -265,6 +265,13 @@ function clPutUser() {
     clAdminDataOp PUT "accounts/$1/users/$2" $3 | jq 'del(.sipPassword)'
 }
 
+function clPostUser() {
+    # Updates the user with accountId ($1), and body ($3)
+    # Expects env: auth_token, cloud
+
+    clAdminDataOp POST "accounts/$1/users" $2 | jq 'del(.sipPassword)'
+}
+
 function clDeleteUser() {
     # Deletes the user with accountId ($1), userId ($2)
     # Expects env: auth_token, cloud
@@ -450,6 +457,7 @@ alias cluser-l="clListUsers $@"
 alias cluser-lbr="clListUsersByRole $@"
 alias cluser-g="clGetUser $@"
 alias cluser-u="clPutUser $@"
+alias cluser-a="clPostUser $@"
 alias cluser-d="clDeleteUser $@"
 alias clutag-u="clPutUserTag $@"
 alias clutag-d="clDeleteUserTag $@"
