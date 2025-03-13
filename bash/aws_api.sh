@@ -8,9 +8,17 @@ alias awssts-whoami='aws --profile=$profile sts get-caller-identity'
 
 # Lambda
 
+function awsLambdaInvoke() {
+    # Invokes a lambda function ($1) with the given payload ($2) using the given temp file ($3)
+    # Expects env: profile to be set
+
+    aws --profile=$profile lambda invoke --function-name=$1 --cli-binary-format=raw-in-base64-out --payload=$2 $3 && cat $3 | jq && rm $3
+}
+
 alias awsl-la='aws --profile=$profile lambda list-aliases --function-name=$lambda_func'
 alias awsl-lv='aws --profile=$profile lambda list-versions-by-function --function-name=$lambda_func --query="Versions[*].{version:Version,modified:LastModified,revisionId:RevisionId}"'
 alias awsl-gp='aws --profile=$profile lambda get-policy --function-name=$lambda_func'
+alias awsl-i='awsLambdaInvoke $@'
 
 # Pinpoint
 
