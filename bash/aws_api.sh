@@ -161,12 +161,23 @@ alias awsddb-cb='aws --profile=$profile dynamodb create-backup --table-name $tab
 alias awsddb-ib='aws --profile=$profile dynamodb describe-backup --backup-arn $table'
 alias awsddb-db='aws --profile=$profile dynamodb restore-table-from-backup --target-table-name=$table --backup-arn $@'
 
+alias awsddb-icb='aws --profile=$profile dynamodb describe-continuous-backups --table-name $table'
+
 # SSM Parameter Store
 
 alias awsssm-lp='aws --profile=$profile ssm describe-parameters'
 alias awsssm-gp='aws --profile=$profile ssm get-parameter --with-decryption --name $@'
+alias awsssm-dp='aws --profile=$profile ssm delete-parameter --name $@'
+alias awsssm-up='aws --profile=$profile ssm put-parameter --overwrite --type=String $@'
 
 # Codepipline
 
-alias awscpipe-l='aws --profile=$profile codepipeline list-pipelines'
+alias awscp-lp='aws --profile=$profile codepipeline list-pipelines --query="pipelines"'
+alias awscp-lpe='aws --profile=$profile codepipeline list-pipeline-executions --query="pipelineExecutionSummaries" --pipeline-name $@'
+alias awscp-lpace='aws --profile=$profile codepipeline list-action-executions --query="actionExecutionDetails" --pipeline-name $@'
 
+# CodeBuild
+
+alias awscb-lp='aws --profile=$profile codebuild list-projects --query="projects"'
+alias awscb-lb='aws --profile=$profile codebuild list-builds-for-project --query="ids" --project-name $@'
+alias awscb-gb='aws --profile=$profile codebuild batch-get-builds --query="builds[0]" --ids $@'
