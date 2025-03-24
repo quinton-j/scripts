@@ -84,11 +84,18 @@ function clListApplications() {
     clAuthOp GET "apps$1"
 }
 
-function clGetApplicationById() {
+function clGetApplication() {
     # Gets the application for the provided id ($1)
     # Expects env: auth_token, cloud
 
     clAuthOp GET "applications/$1"
+}
+
+function clUpdateApplication() {
+    # Gets the application for provided appId ($1) and data ($2)
+    # Expects env: auth_token, cloud
+
+    clAuthDataOp PUT "applications/$1" $2
 }
 
 # Admin API
@@ -158,10 +165,10 @@ function clGetAccountByOrganizationId() {
 }
 
 function clListAccountsByPartnerId() {
-    # Lists the accounts for the provided partnerIds ($1)
+    # Lists the accounts for the provided partnerId ($1) and optional query params ($2)
     # Expects env: auth_token, cloud
 
-    clAdminOp GET "accounts?\$expand=tags&\$filter=partnerId%20eq%20'$1'" \
+    clAdminOp GET "accounts?\$top=10000&\m$expand=tags&\$filter=partnerId%20eq%20'$1'" \
         | jq '._embedded.items | map({name,accountId,accountNumber,partnerId,organizationId,sapId:.tags.mitel_connect_refs.sap_references_primary_1,createdOn,createdBy})'
 }
 
@@ -480,4 +487,5 @@ alias clsub-l="clNotificationsOp GET subscriptions"
 alias clcomp-l="clListComponents $@"
 
 alias clapp-l="clListApplications $@"
-alias clapp-g="clGetApplicationById $@"
+alias clapp-g="clGetApplication $@"
+alias clapp-u="clUpdateApplication $@"
