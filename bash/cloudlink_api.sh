@@ -466,6 +466,7 @@ alias cluser-g="clGetUser $@"
 alias cluser-u="clPutUser $@"
 alias cluser-a="clPostUser $@"
 alias cluser-d="clDeleteUser $@"
+alias cluser-mu="clPatchUsers $@"
 alias clutag-u="clPutUserTag $@"
 alias clutag-d="clDeleteUserTag $@"
 
