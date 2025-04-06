@@ -182,3 +182,11 @@ alias awscp-lpace='aws --profile=$profile codepipeline list-action-executions --
 alias awscb-lp='aws --profile=$profile codebuild list-projects --query="projects"'
 alias awscb-lb='aws --profile=$profile codebuild list-builds-for-project --query="ids" --project-name $@'
 alias awscb-gb='aws --profile=$profile codebuild batch-get-builds --query="builds[0]" --ids $@'
+
+# Secrets Manager
+
+alias awssec-ls='aws --profile=$profile secretsmanager list-secrets --query="SecretList"'
+alias awssec-gs='aws --profile=$profile secretsmanager describe-secret --secret-id $@'
+alias awssec-gsv='aws --profile=$profile secretsmanager get-secret-value --secret-id $@'
+alias awssec-ds='aws --profile=$profile secretsmanager delete-secret --secret-id $@'
+alias awssec-us='aws --profile=$profile secretsmanager put-secret-value --secret-id $@'
