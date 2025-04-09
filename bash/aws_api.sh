@@ -75,7 +75,7 @@ function awsQuickSightCreateIngestion() {
     # Get QuickSight ingestions for the given AWS account id $2 and dataset id $3 and refresh type ($1)
     # Expects env: profile to be set
 
-    local timestamp=$(date --utc '+%Y-%m-%dT%H-%M-%SZ');
+    local timestamp=$(date --utc '+%Y-%m-%dT%H-%M-%SZ')
     aws --profile=$profile quicksight create-ingestion --ingestion-id=full-refresh-$timestamp --ingestion-type=$1 --aws-account-id=$2 --data-set-id=$3
 }
 
@@ -92,7 +92,7 @@ function awsAthenaStartQueryExecution() {
     # Start an Athena query for the given region ($1), account id ($2), catalog ($3), database ($4), and query string ($5)
     # Expects env: profile, region, aws_acc_id to be set
 
-    local timestamp=$(date --utc '+%Y/%m/%d');
+    local timestamp=$(date --utc '+%Y/%m/%d')
     aws --profile=$profile athena start-query-execution \
         --result-configuration "OutputLocation=s3://aws-athena-query-results-$1-$2/Unsaved/$timestamp" \
         --query-execution-context="Catalog=$3,Database=$4" \
@@ -114,8 +114,8 @@ function awsAthenaGetQueryResults() {
 
     aws --profile=$profile athena get-query-results \
         --query="ResultSet.Rows[].Data" \
-        --query-execution-id=$1 \
-    | jq --raw-output '.[] | map(.VarCharValue) | @csv'
+        --query-execution-id=$1 |
+        jq --raw-output '.[] | map(.VarCharValue) | @csv'
 }
 
 alias awsath-sqe='awsAthenaStartQueryExecution $@'
@@ -138,8 +138,16 @@ alias awsglue-lcm='aws --profile=$profile glue get-crawler-metrics --query=Crawl
 function awsSesListSuppressedDestinations() {
     # List suppressed destinations for the given domain ($1) and optional other args
     # Expects env: profile to be set
+    # Set variable nextToken
 
-    aws sesv2 list-suppressed-destinations --profile=$profile --query="{suppressedAddresses:SuppressedDestinationSummaries[?contains(@.EmailAddress,'$1')],nextToken:NextToken}" ${@:2}
+    tmpDir=${LOCALAPPDATA:-$TMP}/q-cli && mkdir $tmpDir 2>/dev/null
+    local tmpFile="$tmpDir/response.json"
+    aws sesv2 list-suppressed-destinations --profile=$profile \
+        --query="{suppressedAddresses:SuppressedDestinationSummaries[?contains(@.EmailAddress,'$1')],nextToken:NextToken}" ${@:2} \
+        >$tmpFile
+    nextToken=$(jq '.nextToken' $tmpFile --raw-output)
+    jq '.' $tmpFile
+    rm $tmpFile
 }
 
 alias awsses-lsd='awsSesListSuppressedDestinations $@'
