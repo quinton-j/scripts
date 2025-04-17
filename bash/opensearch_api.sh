@@ -16,21 +16,21 @@ function opensearchOp() {
     # Executes a curl request against the OpenSearch cluster with the given method ($1) and subroute ($2)
     # Expects env: os_endpoint to be set
 
-    curl --request $1 "http://$os_endpoint/$2"
+    curl --silent --request $1 "http://$os_endpoint/$2"
 }
 
 function opensearchDataOp() {
     # Executes a curl request against the OpenSearch cluster with the given method ($1) and subroute ($2) and data ($3)
     # Expects env: os_endpoint to be set
 
-    curl --request $1 --header 'Content-Type: application/json' "http://$os_endpoint/$2" --data $3
+    curl --silent --request $1 --header 'Content-Type: application/json' "http://$os_endpoint/$2" --data $3
 }
 
 function opensearchGetClusterInfo() {
     # Gets cluster info from an OS cluster
     # Expects env: os_endpoint to be set
 
-    curl --request GET "http://$os_endpoint"
+    curl --silent --request GET "http://$os_endpoint"
 }
 
 function opensearchCat() {
