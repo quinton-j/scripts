@@ -20,7 +20,7 @@ function clOp() {
     # Executes a curl request with the CL auth_token for the given method ($1) and URL ($2)
     # Expects env: auth_token
 
-    curl --header 'Content-Type: application/json' --header "Authorization: Bearer $auth_token" \
+    curl --silent --header 'Content-Type: application/json' --header "Authorization: Bearer $auth_token" \
         --request $1 $2;
 }
 
@@ -28,7 +28,7 @@ function clDataOp() {
     # Executes a curl request with the CL auth_token for the given method ($1) URL ($2) and data ($3)
     # Expects env: auth_token
 
-    curl --header 'Content-Type: application/json' --header "Authorization: Bearer $auth_token" \
+    curl --silent --header 'Content-Type: application/json' --header "Authorization: Bearer $auth_token" \
         --request $1 $2 \
         --data $3
 }
@@ -327,6 +327,20 @@ function clGetClient() {
     clAdminOp GET "accounts/$1/clients/$2"
 }
 
+function clListGroups() {
+    # Lists the clients for the provided accountId ($1)
+    # Expects env: auth_token, cloud
+
+    clAdminOp GET "accounts/$1/groups$2" | jq  '._embedded.items//[]'
+}
+
+function clGetGroup() {
+    # Gets the clients for the provided accountId ($1) and clientId ($2)
+    # Expects env: auth_token, cloud
+
+    clAdminOp GET "accounts/$1/groups/$2"
+}
+
 # Director API
 
 function clListIdentities() {
@@ -473,6 +487,9 @@ alias clutag-d="clDeleteUserTag $@"
 alias clclient-l="clListClients $@"
 alias clclient-g="clGetClient $@"
 
+alias clgroup-l="clListGroups $@"
+alias clgroup-g="clGetGroup $@"
+
 alias clid-l="clListIdentities $@"
 
 alias clconv-l='clChatOp GET conversations'
@@ -490,3 +507,5 @@ alias clcomp-l="clListComponents $@"
 alias clapp-l="clListApplications $@"
 alias clapp-g="clGetApplication $@"
 alias clapp-u="clUpdateApplication $@"
+
+alias clsso-sg="clAuthOp GET /saml2/status?username=$@"
