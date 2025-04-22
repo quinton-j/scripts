@@ -343,11 +343,25 @@ function clGetGroup() {
 
 # Director API
 
+function clDirectorOp() {
+    # Executes a curl get request with the CL auth_token for the given method ($1) chat subresource ($2)
+    # Expects env: auth_token, cloud
+
+    clOp $1 "https://director$cloud.api.mitel.io/2018-07-01/$2"
+}
+
 function clListIdentities() {
     # Lists identities with the id ($1)
     # Expects env: auth_token, cloud
 
-    clOp GET "https://director$cloud.api.mitel.io/2018-07-01/identities?\$expand=null$1"
+    clDirectorOp GET "identities?\$expand=null$1"
+}
+
+function clListServices() {
+    # Lists services
+    # Expects env: auth_token, cloud
+
+    clDirectorOp GET "services"
 }
 
 # Chat API
@@ -491,6 +505,7 @@ alias clgroup-l="clListGroups $@"
 alias clgroup-g="clGetGroup $@"
 
 alias clid-l="clListIdentities $@"
+alias clser-l="clListServices $@"
 
 alias clconv-l='clChatOp GET conversations'
 alias cluconv-l='clChatOp GET users/me/conversations'
