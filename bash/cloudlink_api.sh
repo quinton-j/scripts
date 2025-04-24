@@ -33,6 +33,8 @@ function clDataOp() {
         --data $3
 }
 
+alias odfilter="oDataFilter $@"
+
 # Auth API
 
 function clAuthOp() {
@@ -97,6 +99,16 @@ function clUpdateApplication() {
 
     clAuthDataOp PUT "applications/$1" $2
 }
+
+alias cltok-g="clAuthOp GET token"
+alias cltok-lp="clAuthLoginPassword $@"
+alias clcred-l="clListCredentials $@";
+
+alias clapp-l="clListApplications $@"
+alias clapp-g="clGetApplication $@"
+alias clapp-u="clUpdateApplication $@"
+
+alias clsso-sg="clAuthOp GET /saml2/status?username=$@"
 
 # Admin API
 
@@ -341,6 +353,39 @@ function clGetGroup() {
     clAdminOp GET "accounts/$1/groups/$2"
 }
 
+alias clacc-l="clListAccounts $@"
+alias clacc-g="clGetAccount $@"
+alias clacc-u="clPutAccount $@"
+alias clacc-d="clDeleteAccount $@"
+alias clpart-g="clGetPartner $@"
+alias clpart-l="clListPartners $@"
+alias clpart-u="clPutPartner $@"
+alias clacc-gbo="clGetAccountByOrganizationId $@"
+alias clacc-lbp="clListAccountsByPartnerId $@"
+alias clacc-lbn="clListAccountsContainingName $@"
+
+alias clpol-l="clListPolicies $@"
+alias clpol-g="clGetPolicy $@"
+alias clstate-l="clListPolicyStatements $@"
+alias clstate-g="clGetPolicyStatement $@"
+alias clstate-uc="clPostChatMicroAccountPolicyStatement $@"
+
+alias cluser-l="clListUsers $@"
+alias cluser-lbr="clListUsersByRole $@"
+alias cluser-g="clGetUser $@"
+alias cluser-u="clPutUser $@"
+alias cluser-a="clPostUser $@"
+alias cluser-d="clDeleteUser $@"
+alias cluser-mu="clPatchUsers $@"
+alias clutag-u="clPutUserTag $@"
+alias clutag-d="clDeleteUserTag $@"
+
+alias clclient-l="clListClients $@"
+alias clclient-g="clGetClient $@"
+
+alias clgroup-l="clListGroups $@"
+alias clgroup-g="clGetGroup $@"
+
 # Director API
 
 function clDirectorOp() {
@@ -363,6 +408,9 @@ function clListServices() {
 
     clDirectorOp GET "services"
 }
+
+alias clid-l="clListIdentities $@"
+alias clser-l="clListServices $@"
 
 # Chat API
 
@@ -422,7 +470,13 @@ function clPostMessageText() {
     clPostMessage $1 "{\"body\":\"$2\"}"
 }
 
-# Event history API
+alias clconv-l='clChatOp GET conversations'
+alias cluconv-l='clChatOp GET users/me/conversations'
+alias clcpart-l="clListParticipants $@"
+alias clcmsg-c="clPostMessageText $@"
+alias clcacc-g="clGetChatAccountById $@"
+
+# DataLake API
 
 function clAnalyticsOp() {
     # Executes a curl get request with the CL auth_token for the given method ($1) subresource ($2)
@@ -438,6 +492,8 @@ function clEventHistoryQuery() {
     clAnalyticsOp GET "events-records?\$filter=source%20eq%20'$1'%20and%20subject%20eq%20'$2'%20and%20occurredOn%20gt%20'$3'$4"
 }
 
+alias clehis-l="clEventHistoryQuery $@"
+
 # Notifications API
 
 function clNotificationsOp() {
@@ -446,6 +502,8 @@ function clNotificationsOp() {
 
     clOp $1 "https://notifications$cloud.api.mitel.io/2017-09-01/$2"
 }
+
+alias clsub-l="clNotificationsOp GET subscriptions"
 
 # System manager API
 
@@ -463,64 +521,4 @@ function clListComponents() {
     clSysManOp GET "components$1"
 }
 
-# Aliases
-
-alias odfilter="oDataFilter $@"
-
-alias cltok-g="clAuthOp GET token"
-alias cltok-lp="clAuthLoginPassword $@"
-alias clcred-l="clListCredentials $@";
-
-alias clacc-l="clListAccounts $@"
-alias clacc-g="clGetAccount $@"
-alias clacc-u="clPutAccount $@"
-alias clacc-d="clDeleteAccount $@"
-alias clpart-g="clGetPartner $@"
-alias clpart-l="clListPartners $@"
-alias clpart-u="clPutPartner $@"
-alias clacc-gbo="clGetAccountByOrganizationId $@"
-alias clacc-lbp="clListAccountsByPartnerId $@"
-alias clacc-lbn="clListAccountsContainingName $@"
-
-alias clpol-l="clListPolicies $@"
-alias clpol-g="clGetPolicy $@"
-alias clstate-l="clListPolicyStatements $@"
-alias clstate-g="clGetPolicyStatement $@"
-alias clstate-uc="clPostChatMicroAccountPolicyStatement $@"
-
-alias cluser-l="clListUsers $@"
-alias cluser-lbr="clListUsersByRole $@"
-alias cluser-g="clGetUser $@"
-alias cluser-u="clPutUser $@"
-alias cluser-a="clPostUser $@"
-alias cluser-d="clDeleteUser $@"
-alias cluser-mu="clPatchUsers $@"
-alias clutag-u="clPutUserTag $@"
-alias clutag-d="clDeleteUserTag $@"
-
-alias clclient-l="clListClients $@"
-alias clclient-g="clGetClient $@"
-
-alias clgroup-l="clListGroups $@"
-alias clgroup-g="clGetGroup $@"
-
-alias clid-l="clListIdentities $@"
-alias clser-l="clListServices $@"
-
-alias clconv-l='clChatOp GET conversations'
-alias cluconv-l='clChatOp GET users/me/conversations'
-alias clcpart-l="clListParticipants $@"
-alias clcmsg-c="clPostMessageText $@"
-alias clcacc-g="clGetChatAccountById $@"
-
-alias clehis-l="clEventHistoryQuery $@"
-
-alias clsub-l="clNotificationsOp GET subscriptions"
-
 alias clcomp-l="clListComponents $@"
-
-alias clapp-l="clListApplications $@"
-alias clapp-g="clGetApplication $@"
-alias clapp-u="clUpdateApplication $@"
-
-alias clsso-sg="clAuthOp GET /saml2/status?username=$@"
