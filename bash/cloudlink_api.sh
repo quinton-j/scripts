@@ -522,3 +522,17 @@ function clListComponents() {
 }
 
 alias clcomp-l="clListComponents $@"
+
+# Billing API
+
+function clBillingOp() {
+    # Executes a curl request with the CL auth_token for the given method ($1) billing resource ($2)
+    # Expects env: auth_token, cloud
+
+    clOp $1 "https://billing$cloud.api.mitel.io/2019-03-01/$2"
+}
+
+alias cllic-l="clBillingOp GET licenses $@"
+alias clsub-l="clBillingOp GET subscriptions $@"
+alias clbu-l="clBillingOp GET users $@"
+alias clba-l="clBillingOp GET accounts $@"
