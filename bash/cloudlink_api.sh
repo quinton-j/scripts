@@ -534,5 +534,6 @@ function clBillingOp() {
 
 alias cllic-l="clBillingOp GET licenses $@"
 alias clsub-l="clBillingOp GET subscriptions $@"
+alias clpsub-l="clBillingOp GET partner-subscriptions $@"
 alias clbu-l="clBillingOp GET users $@"
 alias clba-l="clBillingOp GET accounts $@"
