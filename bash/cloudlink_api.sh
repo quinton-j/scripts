@@ -86,6 +86,13 @@ function clCreateCredential() {
     clAuthDataOp POST "credentials" "{\"accountId\":\"$1\",\"name\":\"$2\",\"type\":\"$3\",\"accessRestriction\":\"$4\",\"target\":\"$5\",\"privateKey\":$6}"
 }
 
+function clUpdateCredential() {
+    # Adds a credential for the provided credentialId ($1) and body ($2)
+    # Expects env: auth_token, cloud
+
+    clAuthDataOp PUT "credentials/$1" $2
+}
+
 function clGetCredential() {
     # Gets the credential for the provided credentialId ($2)
     # Expects env: auth_token, cloud
@@ -125,6 +132,7 @@ alias cltok-g="clAuthOp GET token"
 alias cltok-lp="clAuthLoginPassword $@"
 alias clcred-l="clListCredentials $@"
 alias clcred-c="clCreateCredential $@"
+alias clcred-u="clUpdateCredential $@"
 alias clcred-g="clGetCredential $@"
 alias clcred-d="clDeleteCredential $@"
 
