@@ -79,7 +79,7 @@ function clListCredentials() {
     clAuthOp GET "accounts/$1/credentials"
 }
 
-function clAddCredential() {
+function clCreateCredential() {
     # Adds a credential for the provided accountId ($1) and name ($2), type ($3), access restriction ($4), target ($5), and privateKey ($6)
     # Expects env: auth_token, cloud
 
@@ -124,6 +124,7 @@ function clUpdateApplication() {
 alias cltok-g="clAuthOp GET token"
 alias cltok-lp="clAuthLoginPassword $@"
 alias clcred-l="clListCredentials $@"
+alias clcred-c="clCreateCredential $@"
 alias clcred-g="clGetCredential $@"
 alias clcred-d="clDeleteCredential $@"
 
