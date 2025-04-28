@@ -79,6 +79,27 @@ function clListCredentials() {
     clAuthOp GET "accounts/$1/credentials"
 }
 
+function clAddCredential() {
+    # Adds a credential for the provided accountId ($1) and name ($2), type ($3), access restriction ($4), target ($5), and privateKey ($6)
+    # Expects env: auth_token, cloud
+
+    clAuthDataOp POST "credentials" "{\"accountId\":\"$1\",\"name\":\"$2\",\"type\":\"$3\",\"accessRestriction\":\"$4\",\"target\":\"$5\",\"privateKey\":$6}"
+}
+
+function clGetCredential() {
+    # Gets the credential for the provided credentialId ($2)
+    # Expects env: auth_token, cloud
+
+    clAuthOp GET "credentials/$1"
+}
+
+function clDeleteCredential() {
+    # Gets the credential for the provided credentialId ($2)
+    # Expects env: auth_token, cloud
+
+    clAuthOp DELETE "credentials/$1"
+}
+
 function clListApplications() {
     # Lists the applications
     # Expects env: auth_token, cloud
@@ -102,7 +123,9 @@ function clUpdateApplication() {
 
 alias cltok-g="clAuthOp GET token"
 alias cltok-lp="clAuthLoginPassword $@"
-alias clcred-l="clListCredentials $@";
+alias clcred-l="clListCredentials $@"
+alias clcred-g="clGetCredential $@"
+alias clcred-d="clDeleteCredential $@"
 
 alias clapp-l="clListApplications $@"
 alias clapp-g="clGetApplication $@"
