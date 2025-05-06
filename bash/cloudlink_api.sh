@@ -76,7 +76,7 @@ function clListCredentials() {
     # Lists the credentials account for the provided accountId ($1)
     # Expects env: auth_token, cloud
 
-    clAuthOp GET "accounts/$1/credentials"
+    clAuthOp GET "accounts/$1/credentials$2"
 }
 
 function clCreateCredential() {
@@ -427,6 +427,13 @@ function clDirectorOp() {
     clOp $1 "https://director$cloud.api.mitel.io/2018-07-01/$2"
 }
 
+function clDirectorDataOp() {
+    # Executes a curl get request with the CL auth_token for the given method ($1) chat subresource ($2)
+    # Expects env: auth_token, cloud
+
+    clDataOp $1 "https://director$cloud.api.mitel.io/2018-07-01/$2" $3
+}
+
 function clListIdentities() {
     # Lists identities with the id ($1)
     # Expects env: auth_token, cloud
@@ -441,8 +448,28 @@ function clListServices() {
     clDirectorOp GET "services"
 }
 
+function clDeleteService() {
+    # Deletes a registered service with the given host ($1)
+    # Expects env: auth_token, cloud
+
+    clDirectorOp DELETE "services/$1"
+}
+
+function clUpsertService() {
+    # Deletes a registered service with the given host ($3), name ($2), and rank ($2)
+    # Expects env: auth_token, cloud
+
+    local encodedHost=$(echo $3 | jq --raw-input --raw-output '@uri');
+    clDirectorDataOp PUT "services/$encodedHost" "{\"name\":\"$1\",\"rank\":$2}"
+}
+
 alias clid-l="clListIdentities $@"
+alias clid-g="clDirectorOp GET identities/$@"
+alias clid-d="clDirectorOp DELETE identities/$@"
+
 alias clser-l="clListServices $@"
+alias clser-d="clDeleteServices $@"
+alias clser-u="clUpsertService $@"
 
 # Chat API
 
