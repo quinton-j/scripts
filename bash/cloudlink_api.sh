@@ -406,7 +406,7 @@ alias cluser-l="clListUsers $@"
 alias cluser-lbr="clListUsersByRole $@"
 alias cluser-g="clGetUser $@"
 alias cluser-u="clPutUser $@"
-alias cluser-a="clPostUser $@"
+alias cluser-c="clPostUser $@"
 alias cluser-d="clDeleteUser $@"
 alias cluser-mu="clPatchUsers $@"
 alias clutag-u="clPutUserTag $@"
@@ -463,13 +463,54 @@ function clUpsertService() {
     clDirectorDataOp PUT "services/$encodedHost" "{\"name\":\"$1\",\"rank\":$2}"
 }
 
+function clListEventRouters() {
+    # Lists EventRouters
+    # Expects env: auth_token, cloud
+
+    clDirectorOp GET "event-routers"
+}
+
+function clGetEventRouter() {
+    # Gets a EventRouter with the given id ($1)
+    # Expects env: auth_token, cloud
+
+    clDirectorOp GET "event-routers/$1"
+}
+
+function clDeleteEventRouter() {
+    # Deletes an EventRouter with the given id ($1)
+    # Expects env: auth_token, cloud
+
+    clDirectorOp DELETE "event-routers/$1"
+}
+
+function clUpdateEventRouter() {
+    # Updates an EventRouter with the given id ($1) and eventType ($2) and destination ($3)
+    # Expects env: auth_token, cloud
+
+    clDirectorDataOp PUT "event-routers/$1" "{\"eventType\":\"$2\",\"destination\":\"$3\"}"
+}
+
+function clCreateEventRouter() {
+    # Creates an EventRouter with the given account id ($1) and eventType ($2) and destination ($3)
+    # Expects env: auth_token, cloud
+
+    clDirectorDataOp POST "event-routers" "{\"accountId\":\"$1\",\"eventType\":\"$2\",\"destination\":\"$3\"}"
+}
+
 alias clid-l="clListIdentities $@"
 alias clid-g="clDirectorOp GET identities/$@"
 alias clid-d="clDirectorOp DELETE identities/$@"
 
 alias clser-l="clListServices $@"
-alias clser-d="clDeleteServices $@"
+alias clser-d="clDeleteService $@"
 alias clser-u="clUpsertService $@"
+
+alias clert-l="clListEventRouters $@"
+alias clert-g="clGetEventRouter $@"
+alias clert-c="clCreateEventRouter $@"
+alias clert-u="clUpdateEventRouter $@"
+alias clert-d="clDeleteEventRouter $@"
 
 # Chat API
 
