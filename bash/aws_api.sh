@@ -140,7 +140,7 @@ function awsSesListSuppressedDestinations() {
     # Expects env: profile to be set
     # Set variable nextToken
 
-    tmpDir=${LOCALAPPDATA:-$TMP}/q-cli && mkdir $tmpDir 2>/dev/null
+    tmpDir=${LOCALAPPDATA:-$TMP}/${USER:-$USERNAME}-cli && mkdir $tmpDir 2>/dev/null
     local tmpFile="$tmpDir/response.json"
     aws sesv2 list-suppressed-destinations --profile=$profile \
         --query="{suppressedAddresses:SuppressedDestinationSummaries[?contains(@.EmailAddress,'$1')],nextToken:NextToken}" ${@:2} \
