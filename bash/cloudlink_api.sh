@@ -389,12 +389,16 @@ alias clacc-l="clListAccounts $@"
 alias clacc-g="clGetAccount $@"
 alias clacc-u="clPutAccount $@"
 alias clacc-d="clDeleteAccount $@"
-alias clpart-g="clGetPartner $@"
-alias clpart-l="clListPartners $@"
-alias clpart-u="clPutPartner $@"
 alias clacc-gbo="clGetAccountByOrganizationId $@"
 alias clacc-lbp="clListAccountsByPartnerId $@"
 alias clacc-lbn="clListAccountsContainingName $@"
+
+alias clatag-u="clPutAccountTag $@"
+alias clatag-d="clDeleteAccountTag $@"
+
+alias clpart-g="clGetPartner $@"
+alias clpart-l="clListPartners $@"
+alias clpart-u="clPutPartner $@"
 
 alias clpol-l="clListPolicies $@"
 alias clpol-g="clGetPolicy $@"
@@ -547,6 +551,20 @@ function clGetConversations() {
     # Expects env: auth_token, cloud
 
     clChatOp GET "conversations$1"
+}
+
+function clPutAccountTag() {
+    # Updates the user with accountId ($1), tagId ($2), and tag value ($2)
+    # Expects env: auth_token, cloud
+
+    clAdminDataOp PUT "accounts/$1/tags/$2" $3
+}
+
+function clDeleteAccountTag() {
+    # Updates the user with accountId ($1), and tagId ($2)
+    # Expects env: auth_token, cloud
+
+    clAdminOp DELETE "accounts/$1/tags/$2"
 }
 
 function clListParticipants() {
