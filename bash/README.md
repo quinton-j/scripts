@@ -15,7 +15,7 @@ These are maintained in the module [cloudlink_api.sh](./cloudlink_api.sh), and c
 ## OpenSearch API script
 
 Consisting of functions for accessing the AWS OpenSearch service, these are maintained inside the script [opensearch_api.sh](./opensearch_api.sh).
-The concept is to run a Kibana daemon process (`aws-es-kibana`) separately in its own Bash shell, and then run the OpenSeaerch commands from other Bash shells, which communicate with the aforementioned Kibana daemon via local network connections.
+The concept is to run a Kibana daemon process (`aws-es-kibana`) separately in its own Bash shell, and then run the OpenSearch commands from other Bash shells, which communicate with the aforementioned Kibana daemon via local network connections.
 This uses the credentials defined in your AWS profiles to send requests to AWS services.
 
 The commands below deals with OpenSearch snapshots, among other things.
@@ -58,11 +58,11 @@ We will not explain the concept of snapshot here, for more information please co
 |osind-c|`<index-name> <number-of-shards> <number-of-replicas>`|Index|Create a new index|
 |osind-u|`<index-name> <number-of-replicas>`|Index|Update an existing index|
 |osind-d|`<index-name>`|Index|Delete an existing index|
-|osind-cls|`<index-name>`|Index|Close an existing index, preventing it from being accessed (e.g. indexing, searching, ...)|
+|osind-cl|`<index-name>`|Index|Close an existing index, preventing it from being accessed (e.g. indexing, searching, ...)|
 |osind-o|`<index-name>`|Index|Open a closed index|
-|osind-ro|`<index-name>`|Index|Make an index read-only|
-|osind-rw|`<index-name>`|Index|Make an index read-writable|
-|osind-cln|`<source-index-name> <target-index-name>`|Index|Clone an existing index (source) to a new index (target). The target index must not exist|
+|osind-sro|`<index-name>`|Index|Set read-only, making an index read-only|
+|osind-srw|`<index-name>`|Index|Set read/write, making an index read-writable|
+|osind-cfi|`<source-index-name> <target-index-name>`|Index|Clone an existing index (source) to a new index (target). The target index must not exist|
 
 ### Recipes
 
