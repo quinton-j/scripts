@@ -184,6 +184,13 @@ function opensearchRestoreSnapshot() {
         "{\"rename_pattern\":\"(.+)\",\"rename_replacement\":\"restore_${timestamp}_\$1\"}";
 }
 
+function opensearchDeleteSnapshot() {
+    # Delete a snapshot with name ($2) for the given repository ($1) in an OS cluster
+    # Expects env: os_endpoint to be set
+
+    opensearchOp DELETE "_snapshot/$1/$2"
+}
+
 # Queries
 
 function opensearchQuery() {
