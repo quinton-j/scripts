@@ -6,8 +6,10 @@ function awsOpensearchConnect() {
     # Connects to an AWS OS cluster for the given index or domain index ($1)
     # Expects env: profile to be set
 
-    local domainName=$(aws --profile=$profile opensearch list-domain-names --output=text --query="DomainNames[$1].DomainName")
-    os_endpoint=$(aws --profile=$profile opensearch describe-domain --query="DomainStatus.Endpoint" --output=text --domain-name $domainName)
+    # The tr command used in the executions below are to strip out non-printable characters such as carriage returns that the command aws may generate
+    # in the results in some environments (e.g. cygwin).
+    local domainName=$(aws --profile=$profile opensearch list-domain-names --output=text --query="DomainNames[$1].DomainName" | tr --delete "[:space:]")
+    os_endpoint=$(aws --profile=$profile opensearch describe-domain --query="DomainStatus.Endpoint" --output=text --domain-name $domainName | tr --delete "[:space:]")
 
     AWS_PROFILE=$profile ENDPOINT=$os_endpoint aws-es-kibana
 }
@@ -50,7 +52,7 @@ function opensearchDeleteIndex() {
 }
 
 function opensearchPostIndexOperation() {
-    # Performan an operation ($2) on index ($1) in an OS cluster
+    # Performs a POST operation ($2) on index ($1) in an OS cluster
     # Expects env: os_endpoint to be set
 
     opensearchOp POST "$1/_$2"
@@ -61,6 +63,13 @@ function opensearchCloseIndex() {
     # Expects env: os_endpoint to be set
 
     opensearchPostIndexOperation $1 "close"
+}
+
+function opensearchCloneIndex() {
+    # Clones an index ($1) in an OS cluster, the new index name is $2
+    # Expects env: os_endpoint to be set
+
+    opensearchOp PUT $1/_clone/$2
 }
 
 function opensearchOpenIndex() {
@@ -91,6 +100,22 @@ function opensearchReindex() {
 
     opensearchDataOp POST _reindex \
         "{\"source\":{\"index\":\"$1\"},\"dest\":{\"index\":\"$2\",\"op_type\":\"$3\"}}"
+}
+
+function opensearchSetIndexReadOnly() {
+    # Sets the block.read.only = true for the target index ($1)
+    # Expects env: os_endpoint to be set
+
+    opensearchDataOp PUT $1/_settings \
+        "{\"index\":{\"blocks.read_only\":true}}"
+}
+
+function opensearchSetIndexReadWrite() {
+    # Sets the block.read.only = false for the target index ($1)
+    # Expects env: os_endpoint to be set
+
+    opensearchDataOp PUT $1/_settings \
+        "{\"index\":{\"blocks.read_only\":false}}"
 }
 
 function opensearchCreateIndex() {
@@ -160,7 +185,7 @@ function opensearchRestoreSnapshot() {
 }
 
 function opensearchDeleteSnapshot() {
-    # Create a snapshot with name ($2) for the given repository ($1) in an OS cluster
+    # Delete a snapshot with name ($2) for the given repository ($1) in an OS cluster
     # Expects env: os_endpoint to be set
 
     opensearchOp DELETE "_snapshot/$1/$2"
@@ -199,10 +224,13 @@ alias osind-c='opensearchCreateIndex $@'
 alias osind-u='opensearchUpdateIndexSettings $@'
 alias osind-d='opensearchDeleteIndex $@'
 alias osind-o='opensearchOpenIndex $@'
-alias osind-c='opensearchCloseIndex $@'
+alias osind-cl='opensearchCloseIndex $@'
+alias osind-cfi='opensearchCloneIndex $@'
 alias osind-s='opensearchShrinkIndex $@'
 alias osind-b='opensearchSetBlockIndex $@'
 alias osind-r='opensearchReindex $@'
+alias osind-sro='opensearchSetIndexReadOnly $@'
+alias osind-srw='opensearchSetIndexReadWrite $@'
 
 alias osali-l='opensearchCat aliases alias,index,filter,routing.index,routing.search,is_write_index'
 
