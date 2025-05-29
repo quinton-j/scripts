@@ -16,7 +16,7 @@ These are maintained in the module [cloudlink_api.sh](./cloudlink_api.sh), and c
 
 Consisting of functions for accessing the AWS OpenSearch service, these are maintained inside the script [opensearch_api.sh](./opensearch_api.sh).
 The concept is to run a Kibana proxy process (`aws-es-kibana`) separately in its own Bash shell, and then run the OpenSearch commands from other Bash shells, which communicate with the aforementioned Kibana proxy via local network connections.
-This uses the credentials defined in your AWS configuration to send requests to AWS services.
+This uses the configuration defined in your AWS profile to send requests to AWS services.
 
 The commands below deals with OpenSearch snapshots, among other things.
 In OpenSearcch snapshots are stored in _snapshot repositories_, in this context we simply refer to them as repositories.
