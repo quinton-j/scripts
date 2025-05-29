@@ -8,8 +8,8 @@ function awsOpensearchConnect() {
 
     # The tr command used in the executions below are to strip out non-printable characters such as carriage returns that the command aws may generate
     # in the results in some environments (e.g. cygwin).
-    local domainName=$(aws --profile=$profile opensearch list-domain-names --output=text --query="DomainNames[$1].DomainName" | tr -d "[:space:]")
-    os_endpoint=$(aws --profile=$profile opensearch describe-domain --query="DomainStatus.Endpoint" --output=text --domain-name $domainName | tr -d "[:space:]")
+    local domainName=$(aws --profile=$profile opensearch list-domain-names --output=text --query="DomainNames[$1].DomainName" | tr --delete "[:space:]")
+    os_endpoint=$(aws --profile=$profile opensearch describe-domain --query="DomainStatus.Endpoint" --output=text --domain-name $domainName | tr --delete "[:space:]")
 
     AWS_PROFILE=$profile ENDPOINT=$os_endpoint aws-es-kibana
 }
@@ -52,7 +52,7 @@ function opensearchDeleteIndex() {
 }
 
 function opensearchPostIndexOperation() {
-    # Performan a POST operation ($2) on index ($1) in an OS cluster
+    # Performs a POST operation ($2) on index ($1) in an OS cluster
     # Expects env: os_endpoint to be set
 
     opensearchOp POST "$1/_$2"
@@ -102,7 +102,7 @@ function opensearchReindex() {
         "{\"source\":{\"index\":\"$1\"},\"dest\":{\"index\":\"$2\",\"op_type\":\"$3\"}}"
 }
 
-function opensearchReadOnly() {
+function opensearchSetIndexReadOnly() {
     # Sets the block.read.only = true for the target index ($1)
     # Expects env: os_endpoint to be set
 
@@ -110,7 +110,7 @@ function opensearchReadOnly() {
         "{\"index\":{\"blocks.read_only\":true}}"
 }
 
-function opensearchReadWrite() {
+function opensearchSetIndexReadWrite() {
     # Sets the block.read.only = false for the target index ($1)
     # Expects env: os_endpoint to be set
 
@@ -229,8 +229,8 @@ alias osind-cfi='opensearchCloneIndex $@'
 alias osind-s='opensearchShrinkIndex $@'
 alias osind-b='opensearchSetBlockIndex $@'
 alias osind-r='opensearchReindex $@'
-alias osind-sro='opensearchReadOnly $@'
-alias osind-srw='opensearchReadWrite $@'
+alias osind-sro='opensearchSetIndexReadOnly $@'
+alias osind-srw='opensearchSetIndexReadWrite $@'
 
 alias osali-l='opensearchCat aliases alias,index,filter,routing.index,routing.search,is_write_index'
 
