@@ -1,65 +1,42 @@
 # Bash it up
 
-These are bash scripts for executiong various AWS and CloudLink actions.
+Bash scripts for interacting with various cloud hosted APIs.  Example operations assume the corresponding script has been loaded which sets various aliases.  It is recommended to add them to your `.bash_alias` file if they're frequently used.
+     
+## AWS API
 
-## AWS API script
+A set of scripts for interacting with the AWS service via AWS CLI.  These are maintained in the file [aws_api.sh](./aws_api.sh).
 
-These are maintained in the module [aws_api.sh](./aws_api.sh), and consist of the following functionality:
-- TBD
+## CloudLink API
 
-## CloudLink API script
+A set of scripts for interacting with the Mitel CloudLink Platform.  These are maintained in the file [cloudlink_api.sh](./cloudlink_api.sh).
 
-These are maintained in the module [cloudlink_api.sh](./cloudlink_api.sh), and consist of the following functionality:
-- TBD
+## OpenSearch API
 
-## OpenSearch API script
+A set of scripts for interacting with the OpenSearch distributed database.  These are maintained inside the file [opensearch_api.sh](./opensearch_api.sh).  For interacting with AWS OpenSearch, first a signing proxy, such as `aws-es-kibana`, must be ran locally.  The proxy will receive the requests and forward them to the connected AWS OpenSearch instance.
 
-Consisting of functions for accessing the AWS OpenSearch service, these are maintained inside the script [opensearch_api.sh](./opensearch_api.sh).
-The concept is to run a Kibana proxy process (`aws-es-kibana`) separately in its own Bash shell, and then run the OpenSearch commands from other Bash shells, which communicate with the aforementioned Kibana proxy via local network connections.
-This uses the configuration defined in your AWS profile to send requests to AWS services.
-
-The commands below deals with OpenSearch snapshots, among other things.
-In OpenSearcch snapshots are stored in _snapshot repositories_, in this context we simply refer to them as repositories.
+In OpenSearch snapshots are stored in _snapshot repositories_, in this context we simply refer to them as repositories.
 We will not explain the concept of snapshot here, for more information please consult [OpenSearch documentation](https://docs.aws.amazon.com/opensearch-service/latest/developerguide/managedomains-snapshots.html). 
 
-### Setup
+### AWS OpenSearch proxy setup
 
-#### Sourcing the script
-
-Do this for every new shell:
-
-- In a bash shell, source the [opensearch_api.sh](./opensearch_api.sh) script, i.e. execute it in the current Bash shell. This will set up functions, aliases, and global variables for that Bash shell:
-   - `. ./opensearch_api.sh` (note the dot followed by a space at the beginning of the command, they are important!)
-
-#### Startup the Kibana proxy process
-
-- [Source the script](#sourcing-the-script)
-- Start the Kibana proxy (this will block the current shell from further use):
-   - In regions where there is a single OpenSearch domain, you can simply execute:
-     - `profile=<your AWS profile> awsos-c`
-   - In regions where there are more than one domain, you must specify the name of the target domain:
-     - `profile=<your AWS profile> awsos-c "?DomainName == 'the name of your domain'"`
-
-#### Setup the Kibana connection
-
-This sets up the Kibana connection, in a bash shell, info for all subsequent OpenSearch commands.
-   - [Source the script](#sourcing-the-script)
-   - Execute `oscon-sl`
-
-### How to use the script
-
-1. Start up the [Kibana proxy](#startup-the-kibana-proxy-process).
-1. In separate Bash shells, set up the [Kibana connection](#setup-the-kibana-connection).
-1. Now you are ready to execute OpenSearch commands in the aforementioned bash shells. Below are some examples:
-   - `osind-l`
-   - `osclu-g`
-   - ...
+Start the proxy with.
+```bash
+$ profile=$profile awsos-c "?DomainName == '$osDomain'"
+```
+In regions where there is a single OpenSearch domain the Domain name doesn't need to be specified.
+```bash
+$ profile=$profile awsos-c
+```
+Set the OpenSearch connection URL variable to local to forward requests to the proxy.
+```
+$ oscon-sl
+```
 
 ### OpenSearch commands
 
 |Command|Args|Category|Description|
 |--|--|--|--|
-|awsos-c|`"?DomainName == '<target domain name>'"` or omit if there's only one domain in the target cloud|Init|Launch the `aws-es-kibana` daemon against a target OpenSearch domain|
+|awsos-c|`"?DomainName == '$domain'"` or omit if there's only one domain in the target cloud|Init|Launch the `aws-es-kibana` daemon against a target OpenSearch domain|
 |oscon-sl|None|Init|Setup the Kibana connection for subsequent OpenSearech commands|
 |osclu-g|None|Domain|Get (display) detailed information about the target OpenSearch cluster (domain)|
 |osssr-l|None|Repository|List all snapshot repositories registered with the target OpenSearch domain|
@@ -81,20 +58,13 @@ This sets up the Kibana connection, in a bash shell, info for all subsequent Ope
 
 ### Recipes
 
-The recipes below assumes that steps 1-4 in the [how to](#how-to-use-the-script) section above have been performed.
-
 #### List the the names of all snapshots in a repository
 
 List the names of snapshots in  a repository and output as a JSON array:
-
-`osss-l <repository-name> | jq "[.snapshots.[].snapshot]"`
-
-Could be redirected to a .csv if desired.
-
-`$ osss-l <repository-name> | jq --raw-output '.snapshots.[].snapshot | @csv'`
-
-Example:
-
-List the names of snapshots in the automatic snapshot repository (`cs-automated-enc`) of the target OpenSearch domain.
-
-`osss-l cs-automated-enc | jq "[.snapshots.[].snapshot]"`
+```bash
+$ osss-l <repository-name> | jq "[.snapshots.[].snapshot]"
+```
+It's often useful to convert the output to CSV format for compactness.  It can be redirected to a file if desired.
+```bash
+$ osss-l <repository-name> | jq --raw-output '.snapshots.[].snapshot | @csv'
+```
