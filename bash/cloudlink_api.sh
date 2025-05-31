@@ -7,13 +7,13 @@
 function oDataFilter() {
     # Constructs an OData filter chain for the given operator ($1), property ($2) and following values
 
-    local f="";
-    for value in ${@:3}; do 
-        f="$f%20$1%20$2%20eq%20%27$value%27";
-    done;
+    local f=""
+    for value in ${@:3}; do
+        f="$f%20$1%20$2%20eq%20%27$value%27"
+    done
 
-    f="${f/\%20or\%20/}";
-    echo $f;
+    f="${f/\%20or\%20/}"
+    echo $f
 }
 
 function clOp() {
@@ -21,7 +21,7 @@ function clOp() {
     # Expects env: auth_token
 
     curl --silent --header 'Content-Type: application/json' --header "Authorization: Bearer $auth_token" \
-        --request $1 $2;
+        --request $1 $2
 }
 
 function clDataOp() {
@@ -60,15 +60,27 @@ function clAuthPostToken() {
 
 function clAuthLoginPassword() {
     # Executes a curl request with the CL auth_token for the username ($1), password ($2), and accountId ($3)
-    # Expects env: auth_token, cloud
+    # Expects env: cloud
 
-    read -r -p $'Enter your username and accountId: \n' uname accid
+    read -r -p $'Enter your username: \n' uname
+    read -r -p $'Enter your accountId: \n' accid
     read -r -p $'Enter your password: \n' -s pass
 
-    clAuthPostToken "password" "\"username\":\"$uname\",\"password\":\"$pass\",\"account_id\":\"$accid\"" > token.tmp
+    tmpDir=${LOCALAPPDATA:-$TMP}/${USER:-$USERNAME}-cli && mkdir $tmpDir 2>/dev/null
+    local tmpFile=$tmpDir/token.tmp
+    clAuthPostToken "password" "\"username\":\"$uname\",\"password\":\"$pass\",\"account_id\":\"$accid\"" > $tmpFile
     unset pass uname accid
-    auth_token=$(jq -r '.access_token' token.tmp)
-    rm token.tmp
+    auth_token=$(jq -r '.access_token' $tmpFile)
+
+    local credFile=~/.cloudlink/credentials
+    if [ ! -f $credFile ]; then
+        mkdir --parents ~/.cloudlink
+        echo '{}' >$credFile
+    fi
+
+    jq --arg cloud "${cloud:1}" --argjson token "$(jq -r '.' $tmpFile)" \
+        '.[$cloud] = $token' $credFile > $credFile
+    rm $tmpFile
     clAuthOp GET token | jq '.'
 }
 
@@ -169,14 +181,14 @@ function clListAccountsContainingName() {
     # List accounts with name variants and optional query params ($1)
     # Expects env: auth_token, cloud
 
-    local casedNames=($1 ${1,,} ${1^^} ${1^});
+    local casedNames=($1 ${1,,} ${1^^} ${1^})
 
-    local filter='';
+    local filter=''
     for name in ${casedNames[*]}; do
-         filter+="substringof(name,'$name')%20or%20";
-    done;
+        filter+="substringof(name,'$name')%20or%20"
+    done
 
-    clAdminOp GET "accounts?\$filter=${filter::-8}";
+    clAdminOp GET "accounts?\$filter=${filter::-8}"
 }
 
 function clGetAccount() {
@@ -204,23 +216,23 @@ function clGetAccountByOrganizationId() {
     # Gets the account for the provided organizationId ($1)
     # Expects env: auth_token, cloud
 
-    clAdminOp GET "accounts?\$expand=tags&\$filter=organizationId%20eq%20'$1'" \
-        | jq '._embedded.items[0] | {name,accountId,accountNumber,partnerId,organizationId,sapId:.tags.mitel_connect_refs.sap_references_primary_1}'
+    clAdminOp GET "accounts?\$expand=tags&\$filter=organizationId%20eq%20'$1'" |
+        jq '._embedded.items[0] | {name,accountId,accountNumber,partnerId,organizationId,sapId:.tags.mitel_connect_refs.sap_references_primary_1}'
 }
 
 function clListAccountsByPartnerId() {
     # Lists the accounts for the provided partnerId ($1) and optional query params ($2)
     # Expects env: auth_token, cloud
 
-    clAdminOp GET "accounts?\$top=10000&\$expand=tags&\$filter=partnerId%20eq%20'$1'" \
-        | jq '._embedded.items | map({name,accountId,accountNumber,partnerId,organizationId,sapId:.tags.mitel_connect_refs.sap_references_primary_1,createdOn,createdBy})'
+    clAdminOp GET "accounts?\$top=10000&\$expand=tags&\$filter=partnerId%20eq%20'$1'" |
+        jq '._embedded.items | map({name,accountId,accountNumber,partnerId,organizationId,sapId:.tags.mitel_connect_refs.sap_references_primary_1,createdOn,createdBy})'
 }
 
 function clListUsersByRole() {
     # Lists the account for the provided accountId ($1)
     # Expects env: auth_token, cloud
 
-    clAdminOp GET "accounts/$1/users$2" | jq  '._embedded.items//[] | group_by(.role) | map({accountId:.[0].accountId,role:.[0].role,users:(. | del(.[].sipPassword)),count:length })'
+    clAdminOp GET "accounts/$1/users$2" | jq '._embedded.items//[] | group_by(.role) | map({accountId:.[0].accountId,role:.[0].role,users:(. | del(.[].sipPassword)),count:length })'
 }
 
 function clGetPartner() {
@@ -283,7 +295,7 @@ function clPostPolicyStatement() {
     # Updates the policy statement with accountId ($1), policyId ($2), statementId ($3), effect ($4), action ($5), and resource ($6)
     # Expects env: auth_token, cloud
 
-    local data="{\"statementId\":\"$3\",\"effect\":\"$4\",\"action\":[\"$5\"],\"resource\":[\"$6\"]}";
+    local data="{\"statementId\":\"$3\",\"effect\":\"$4\",\"action\":[\"$5\"],\"resource\":[\"$6\"]}"
 
     clPostPolicyStatements $1 $2 $data
 }
@@ -348,11 +360,11 @@ function clPatchUsers() {
     # Updates the userIds (${@:4}) in accountId ($1), op ($2) command ($3)
     # Expects env: auth_token, cloud
 
-    local data='{"operations":[';
-    for userId in ${@:4};
-        do data="${data}{\"op\":\"$2\",\"id\":\"${userId}\",\"body\":$3},";
-    done;
-    data="${data%?}]}";
+    local data='{"operations":['
+    for userId in ${@:4}; do
+        data="${data}{\"op\":\"$2\",\"id\":\"${userId}\",\"body\":$3},"
+    done
+    data="${data%?}]}"
 
     clAdminDataOp PATCH "accounts/$1/users" "$data" | jq '.operations//[] | map({statusCode,corrId:.headers."x-mitel-correlation-id",body:(.body | del(.sipPassword))})'
 }
@@ -361,7 +373,7 @@ function clListClients() {
     # Lists the clients for the provided accountId ($1)
     # Expects env: auth_token, cloud
 
-    clAdminOp GET "accounts/$1/clients$2" | jq  '._embedded.items//[]'
+    clAdminOp GET "accounts/$1/clients$2" | jq '._embedded.items//[]'
 }
 
 function clGetClient() {
@@ -375,7 +387,7 @@ function clListGroups() {
     # Lists the clients for the provided accountId ($1)
     # Expects env: auth_token, cloud
 
-    clAdminOp GET "accounts/$1/groups$2" | jq  '._embedded.items//[]'
+    clAdminOp GET "accounts/$1/groups$2" | jq '._embedded.items//[]'
 }
 
 function clGetGroup() {
@@ -463,7 +475,7 @@ function clUpsertService() {
     # Deletes a registered service with the given host ($3), name ($2), and rank ($2)
     # Expects env: auth_token, cloud
 
-    local encodedHost=$(echo $3 | jq --raw-input --raw-output '@uri');
+    local encodedHost=$(echo $3 | jq --raw-input --raw-output '@uri')
     clDirectorDataOp PUT "services/$encodedHost" "{\"name\":\"$1\",\"rank\":$2}"
 }
 
