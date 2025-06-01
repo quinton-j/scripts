@@ -59,23 +59,24 @@ function clAuthPostToken() {
 }
 
 function clAuthLoginPassword() {
-    # Executes a curl request with the CL auth_token by accepting or soliciting username, accountId, and password
+    # Executes a curl request with the CL auth_token by accepting or soliciting username ($1), accountId ($2), and password ($3)
     # Expects env: cloud, clCredentialsFile
 
-    local username=${1:-}
-    local accountid=${2:-}
-    local password=${3:-}
-    
+    local username=$1
+    local accountid=$2
+    local password=$3
+
     if [ -z "$username" ]; then
-        read -r -p $'Enter your username: \n' username
+        read -r -p 'Username: ' username
     fi
     
     if [ -z "$accountid" ]; then
-        read -r -p $'Enter your accountId: \n' accountid
+        read -r -p 'AccountId: ' accountid
     fi
     
     if [ -z "$password" ]; then
-        read -r -p $'Enter your password: \n' -s password
+        read -r -p 'Password: ' -s password
+        echo
     fi
 
     tmpDir=${LOCALAPPDATA:-$TMP}/${USER:-$USERNAME}-cli && mkdir --parents $tmpDir
