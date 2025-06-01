@@ -59,17 +59,28 @@ function clAuthPostToken() {
 }
 
 function clAuthLoginPassword() {
-    # Executes a curl request with the CL auth_token by soliciting username, password, and accountId
+    # Executes a curl request with the CL auth_token by accepting or soliciting username, accountId, and password
     # Expects env: cloud, clCredentialsFile
 
-    read -r -p $'Enter your username: \n' uname
-    read -r -p $'Enter your accountId: \n' accid
-    read -r -p $'Enter your password: \n' -s pass
+    local username=${1:-}
+    local accountid=${2:-}
+    local password=${3:-}
+    
+    if [ -z "$username" ]; then
+        read -r -p $'Enter your username: \n' username
+    fi
+    
+    if [ -z "$accountid" ]; then
+        read -r -p $'Enter your accountId: \n' accountid
+    fi
+    
+    if [ -z "$password" ]; then
+        read -r -p $'Enter your password: \n' -s password
+    fi
 
     tmpDir=${LOCALAPPDATA:-$TMP}/${USER:-$USERNAME}-cli && mkdir --parents $tmpDir
     local tmpFile=$tmpDir/token.tmp
-    clAuthPostToken "password" "\"username\":\"$uname\",\"password\":\"$pass\",\"account_id\":\"$accid\"" >$tmpFile
-    unset pass uname accid
+    clAuthPostToken "password" "\"username\":\"$username\",\"password\":\"$password\",\"account_id\":\"$accountid\"" >$tmpFile
     auth_token=$(jq --raw-output '.access_token' $tmpFile)
 
     if [ ! -f $clCredentialsFile ]; then
