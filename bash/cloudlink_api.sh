@@ -59,28 +59,27 @@ function clAuthPostToken() {
 }
 
 function clAuthLoginPassword() {
-    # Executes a curl request with the CL auth_token for the username ($1), password ($2), and accountId ($3)
-    # Expects env: cloud
+    # Executes a curl request with the CL auth_token by soliciting username, password, and accountId
+    # Expects env: cloud, clCredentialsFile
 
     read -r -p $'Enter your username: \n' uname
     read -r -p $'Enter your accountId: \n' accid
     read -r -p $'Enter your password: \n' -s pass
 
-    tmpDir=${LOCALAPPDATA:-$TMP}/${USER:-$USERNAME}-cli && mkdir $tmpDir 2>/dev/null
+    tmpDir=${LOCALAPPDATA:-$TMP}/${USER:-$USERNAME}-cli && mkdir --parents $tmpDir
     local tmpFile=$tmpDir/token.tmp
-    clAuthPostToken "password" "\"username\":\"$uname\",\"password\":\"$pass\",\"account_id\":\"$accid\"" > $tmpFile
+    clAuthPostToken "password" "\"username\":\"$uname\",\"password\":\"$pass\",\"account_id\":\"$accid\"" >$tmpFile
     unset pass uname accid
-    auth_token=$(jq -r '.access_token' $tmpFile)
+    auth_token=$(jq --raw-output '.access_token' $tmpFile)
 
-    local credFile=~/.cloudlink/credentials
-    if [ ! -f $credFile ]; then
+    if [ ! -f $clCredentialsFile ]; then
         mkdir --parents ~/.cloudlink
-        echo '{}' >$credFile
+        echo '{}' >$clCredentialsFile
     fi
 
-    jq --arg cloud "${cloud:1}" --argjson token "$(jq -r '.' $tmpFile)" \
-        '.[$cloud] = $token' $credFile > $credFile
-    rm $tmpFile
+    jq --arg cloud "${cloud:1}" --argjson token "$(jq --raw-output '{access_token ,refresh_token}' $tmpFile)" \
+        '.[$cloud] = $token' $clCredentialsFile >$tmpFile
+    mv $tmpFile $clCredentialsFile
     clAuthOp GET token | jq '.'
 }
 
@@ -140,8 +139,12 @@ function clUpdateApplication() {
     clAuthDataOp PUT "applications/$1" $2
 }
 
+export clCredentialsFile=~/.cloudlink/credentials
 alias cltok-g="clAuthOp GET token"
 alias cltok-lp="clAuthLoginPassword $@"
+alias cltok-clip="echo \$auth_token > /dev/clipboard"
+alias cltok-set='auth_token=$(jq --raw-output ".[\"${cloud:1}\"].access_token" $clCredentialsFile)'
+
 alias clcred-l="clListCredentials $@"
 alias clcred-c="clCreateCredential $@"
 alias clcred-u="clUpdateCredential $@"
