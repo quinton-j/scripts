@@ -151,6 +151,20 @@ function clUpdateApplication() {
     clAuthDataOp PUT "applications/$1" $2
 }
 
+function clListIdentityProvders() {
+    # Gets the identity providers for account of the token
+    # Expects env: auth_token, cloud
+
+    clAuthOp GET "identityProviders"
+}
+
+function clGetIdentityProvder() {
+    # Gets the identity providers for the provided id ($1)
+    # Expects env: auth_token, cloud
+
+    clAuthOp GET "identityProviders/$1"
+}
+
 export clCredentialsFile=~/.cloudlink/credentials
 alias cltok-g="clAuthOp GET token"
 alias cltok-lp="clAuthLoginPassword $@"
@@ -168,6 +182,8 @@ alias clapp-g="clGetApplication $@"
 alias clapp-u="clUpdateApplication $@"
 
 alias clsso-sg="clAuthOp GET /saml2/status?username=$@"
+alias clidp-l="clListIdentityProvders $@"
+alias clidp-g="clGetIdentityProvders $@"
 
 # Admin API
 
