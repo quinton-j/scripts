@@ -203,3 +203,9 @@ alias awssec-gs='aws --profile=$profile secretsmanager describe-secret --secret-
 alias awssec-gsv='aws --profile=$profile secretsmanager get-secret-value --secret-id $@'
 alias awssec-ds='aws --profile=$profile secretsmanager delete-secret --secret-id $@'
 alias awssec-us='aws --profile=$profile secretsmanager put-secret-value --secret-id $@'
+
+# CloudFormation
+
+alias awscform-ls='aws --profile=$profile cloudformation list-stacks --query "StackSummaries" | jq'
+alias awscform-lsr='aws --profile=$profile cloudformation list-stack-resources --stack-name=$stackName --query "StackResourceSummaries" | jq'
+alias awscform-lse='aws --profile=$profile cloudformation describe-stack-events --stack-name=$stackName --query="StackEvents" | jq'
