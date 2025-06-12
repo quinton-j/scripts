@@ -331,6 +331,13 @@ function clPostPolicyStatement() {
     clPostPolicyStatements $1 $2 $data
 }
 
+function clDeletePolicyStatement() {
+    # Delete policy statement for accountId ($1), policyId ($2), and statementId ($3)
+    # Expects env: auth_token, cloud
+
+    clAdminOp DELETE "accounts/$1/policies/$2/statements/$3"
+}
+
 function clPostChatMicroAccountPolicyStatement() {
     # Updates the policy statement with accountId ($1), statementId ($2) effect ($3)
     # Expects env: auth_token, cloud
@@ -447,6 +454,7 @@ alias clpol-l="clListPolicies $@"
 alias clpol-g="clGetPolicy $@"
 alias clstate-l="clListPolicyStatements $@"
 alias clstate-g="clGetPolicyStatement $@"
+alias clstate-d="clDeletePolicyStatement $@"
 alias clstate-uc="clPostChatMicroAccountPolicyStatement $@"
 
 alias cluser-l="clListUsers $@"
@@ -676,13 +684,21 @@ function clSysManOp() {
 }
 
 function clListComponents() {
-    # List accounts with optional query params ($1)
+    # List components with optional query params ($1)
     # Expects env: auth_token, cloud
 
     clSysManOp GET "components$1"
 }
 
+function clListPlatforms() {
+    # List platforms with optional query params ($1)
+    # Expects env: auth_token, cloud
+
+    clSysManOp GET "platforms$1"
+}
+
 alias clcomp-l="clListComponents $@"
+alias clplat-l="clListPlatforms $@"
 
 # Billing API
 
