@@ -332,7 +332,7 @@ function clPostPolicyStatement() {
 }
 
 function clDeletePolicyStatement() {
-    # Gets policy statement for accountId ($1), policyId ($2), and statementId ($3)
+    # Delete policy statement for accountId ($1), policyId ($2), and statementId ($3)
     # Expects env: auth_token, cloud
 
     clAdminOp DELETE "accounts/$1/policies/$2/statements/$3"
