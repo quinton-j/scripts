@@ -697,8 +697,24 @@ function clListPlatforms() {
     clSysManOp GET "platforms$1"
 }
 
-alias clcomp-l="clListComponents $@"
-alias clplat-l="clListPlatforms $@"
+function clGetPlatform() {
+    # Get platform with ID ($1)
+    # Expects env: auth_token, cloud
+
+    clSysManOp GET "platforms/$1"
+}
+
+function clDeletePlatform() {
+    # Delete platform with ID ($1)
+    # Expects env: auth_token, cloud
+
+    clSysManOp DELETE "platforms/$1"
+}
+
+alias clcomp-l='clListComponents $@'
+alias clplat-l='clListPlatforms $@'
+alias clplat-g='clGetPlatform $@'
+alias clplat-d='clDeletePlatform $@'
 
 # Billing API
 
