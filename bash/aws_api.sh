@@ -15,11 +15,21 @@ function awsLambdaInvoke() {
     aws --profile=$profile lambda invoke --function-name=$1 --cli-binary-format=raw-in-base64-out --payload=$2 $3 && cat $3 | jq && rm $3
 }
 
+function awsLambdaPutConcurrency() {
+    # Sets the reserved concurrency for a lambda function ($1) to ($2)
+    # Expects env: profile to be set
+
+    aws --profile=$profile lambda put-function-concurrency --function-name $1 --reserved-concurrent-executions $2
+}
+
 alias awsl-lf='aws --profile=$profile lambda list-functions --query="Functions" $@'
 alias awsl-la='aws --profile=$profile lambda list-aliases --function-name=$lambda_func --query="Aliases" $@'
 alias awsl-lv='aws --profile=$profile lambda list-versions-by-function --function-name=$lambda_func --query="Versions[*].{version:Version,modified:LastModified,revisionId:RevisionId}" $@'
 alias awsl-gp='aws --profile=$profile lambda get-policy --function-name=$lambda_func $@'
 alias awsl-i='awsLambdaInvoke $@'
+alias awsl-gc='aws --profile=$profile lambda get-function-concurrency --function-name $@'
+alias awsl-pc='awsLambdaPutConcurrency $@'
+alias awsl-gc='aws --profile=$profile lambda delete-function-concurrency --function-name $@'
 
 # Pinpoint
 
