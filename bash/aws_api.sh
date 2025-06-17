@@ -23,13 +23,17 @@ function awsLambdaPutConcurrency() {
 }
 
 alias awsl-lf='aws --profile=$profile lambda list-functions --query="Functions" $@'
-alias awsl-la='aws --profile=$profile lambda list-aliases --function-name=$lambda_func --query="Aliases" $@'
-alias awsl-lv='aws --profile=$profile lambda list-versions-by-function --function-name=$lambda_func --query="Versions[*].{version:Version,modified:LastModified,revisionId:RevisionId}" $@'
-alias awsl-gp='aws --profile=$profile lambda get-policy --function-name=$lambda_func $@'
+alias awsl-gf='aws --profile=$profile lambda get-function --query="Configuration" --function-name $@'
+alias awsl-df='aws --profile=$profile lambda delete-function --function-name $@'
+
+alias awsl-la='aws --profile=$profile lambda list-aliases --query="Aliases" --function-name $@'
+alias awsl-lv='aws --profile=$profile lambda list-versions-by-function --query="Versions[*].{version:Version,modified:LastModified,revisionId:RevisionId}" --function-name $@'
+alias awsl-gp='aws --profile=$profile lambda get-policy --function-name $@'
 alias awsl-i='awsLambdaInvoke $@'
+
 alias awsl-gc='aws --profile=$profile lambda get-function-concurrency --function-name $@'
 alias awsl-pc='awsLambdaPutConcurrency $@'
-alias awsl-gc='aws --profile=$profile lambda delete-function-concurrency --function-name $@'
+alias awsl-dc='aws --profile=$profile lambda delete-function-concurrency --function-name $@'
 
 # Pinpoint
 
