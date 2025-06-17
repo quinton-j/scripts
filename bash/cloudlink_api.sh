@@ -33,7 +33,7 @@ function clDataOp() {
         --data $3
 }
 
-alias odfilter="oDataFilter $@"
+alias odfilter="oDataFilter"
 
 # Auth API
 
@@ -41,7 +41,7 @@ function clAuthOp() {
     # Executes a curl request with the CL auth_token for the given method ($1) auth resource ($2)
     # Expects env: auth_token, cloud
 
-    clOp $1 "https://authentication$cloud.api.mitel.io/2017-09-01/$2"
+    clOp $1 "https://authentication$cloud.api.mitel.io/2017-09-01/$2$3"
 }
 
 function clAuthDataOp() {
@@ -167,23 +167,23 @@ function clGetIdentityProvder() {
 
 export clCredentialsFile=~/.cloudlink/credentials
 alias cltok-g="clAuthOp GET token"
-alias cltok-lp="clAuthLoginPassword $@"
+alias cltok-lp="clAuthLoginPassword"
 alias cltok-clip="echo \$auth_token > /dev/clipboard"
 alias cltok-set='auth_token=$(jq --raw-output ".[\"${cloud:1}\"].access_token" $clCredentialsFile)'
 
-alias clcred-l="clListCredentials $@"
-alias clcred-c="clCreateCredential $@"
-alias clcred-u="clUpdateCredential $@"
-alias clcred-g="clGetCredential $@"
-alias clcred-d="clDeleteCredential $@"
+alias clcred-l="clListCredentials"
+alias clcred-c="clCreateCredential"
+alias clcred-u="clUpdateCredential"
+alias clcred-g="clGetCredential"
+alias clcred-d="clDeleteCredential"
 
-alias clapp-l="clListApplications $@"
-alias clapp-g="clGetApplication $@"
-alias clapp-u="clUpdateApplication $@"
+alias clapp-l="clListApplications"
+alias clapp-g="clGetApplication"
+alias clapp-u="clUpdateApplication"
 
-alias clsso-sg="clAuthOp GET /saml2/status?username=$@"
-alias clidp-l="clListIdentityProvders $@"
-alias clidp-g="clGetIdentityProvders $@"
+alias clsso-sg="clAuthOp GET saml2/status?username="
+alias clidp-l="clListIdentityProvders"
+alias clidp-g="clGetIdentityProvders"
 
 # Admin API
 
@@ -435,55 +435,55 @@ function clGetGroup() {
     clAdminOp GET "accounts/$1/groups/$2"
 }
 
-alias clacc-l="clListAccounts $@"
-alias clacc-g="clGetAccount $@"
-alias clacc-u="clPutAccount $@"
-alias clacc-d="clDeleteAccount $@"
-alias clacc-gbo="clGetAccountByOrganizationId $@"
-alias clacc-lbp="clListAccountsByPartnerId $@"
-alias clacc-lbn="clListAccountsContainingName $@"
+alias clacc-l="clListAccounts"
+alias clacc-g="clGetAccount"
+alias clacc-u="clPutAccount"
+alias clacc-d="clDeleteAccount"
+alias clacc-gbo="clGetAccountByOrganizationId"
+alias clacc-lbp="clListAccountsByPartnerId"
+alias clacc-lbn="clListAccountsContainingName"
 
-alias clatag-u="clPutAccountTag $@"
-alias clatag-d="clDeleteAccountTag $@"
+alias clatag-u="clPutAccountTag"
+alias clatag-d="clDeleteAccountTag"
 
-alias clpart-g="clGetPartner $@"
-alias clpart-l="clListPartners $@"
-alias clpart-u="clPutPartner $@"
+alias clpart-g="clGetPartner"
+alias clpart-l="clListPartners"
+alias clpart-u="clPutPartner"
 
-alias clpol-l="clListPolicies $@"
-alias clpol-g="clGetPolicy $@"
-alias clstate-l="clListPolicyStatements $@"
-alias clstate-g="clGetPolicyStatement $@"
-alias clstate-d="clDeletePolicyStatement $@"
-alias clstate-uc="clPostChatMicroAccountPolicyStatement $@"
+alias clpol-l="clListPolicies"
+alias clpol-g="clGetPolicy"
+alias clstate-l="clListPolicyStatements"
+alias clstate-g="clGetPolicyStatement"
+alias clstate-d="clDeletePolicyStatement"
+alias clstate-uc="clPostChatMicroAccountPolicyStatement"
 
-alias cluser-l="clListUsers $@"
-alias cluser-lbr="clListUsersByRole $@"
-alias cluser-g="clGetUser $@"
-alias cluser-u="clPutUser $@"
-alias cluser-c="clPostUser $@"
-alias cluser-d="clDeleteUser $@"
-alias cluser-mu="clPatchUsers $@"
-alias clutag-u="clPutUserTag $@"
-alias clutag-d="clDeleteUserTag $@"
+alias cluser-l="clListUsers"
+alias cluser-lbr="clListUsersByRole"
+alias cluser-g="clGetUser"
+alias cluser-u="clPutUser"
+alias cluser-c="clPostUser"
+alias cluser-d="clDeleteUser"
+alias cluser-mu="clPatchUsers"
+alias clutag-u="clPutUserTag"
+alias clutag-d="clDeleteUserTag"
 
-alias clclient-l="clListClients $@"
-alias clclient-g="clGetClient $@"
+alias clclient-l="clListClients"
+alias clclient-g="clGetClient"
 
-alias clgroup-l="clListGroups $@"
-alias clgroup-g="clGetGroup $@"
+alias clgroup-l="clListGroups"
+alias clgroup-g="clGetGroup"
 
 # Director API
 
 function clDirectorOp() {
-    # Executes a curl get request with the CL auth_token for the given method ($1) chat subresource ($2)
+    # Executes a curl get request with the CL auth_token for the given method ($1) director subresource ($2)
     # Expects env: auth_token, cloud
 
-    clOp $1 "https://director$cloud.api.mitel.io/2018-07-01/$2"
+    clOp $1 "https://director$cloud.api.mitel.io/2018-07-01/$2$3"
 }
 
 function clDirectorDataOp() {
-    # Executes a curl get request with the CL auth_token for the given method ($1) chat subresource ($2)
+    # Executes a curl get request with the CL auth_token for the given method ($1) director subresource ($2)
     # Expects env: auth_token, cloud
 
     clDataOp $1 "https://director$cloud.api.mitel.io/2018-07-01/$2" $3
@@ -553,19 +553,19 @@ function clCreateEventRouter() {
     clDirectorDataOp POST "event-routers" "{\"accountId\":\"$1\",\"eventType\":\"$2\",\"destination\":\"$3\"}"
 }
 
-alias clid-l="clListIdentities $@"
-alias clid-g="clDirectorOp GET identities/$@"
-alias clid-d="clDirectorOp DELETE identities/$@"
+alias clid-l="clListIdentities"
+alias clid-g="clDirectorOp GET identities/"
+alias clid-d="clDirectorOp DELETE identities/"
 
-alias clser-l="clListServices $@"
-alias clser-d="clDeleteService $@"
-alias clser-u="clUpsertService $@"
+alias clser-l="clListServices"
+alias clser-d="clDeleteService"
+alias clser-u="clUpsertService"
 
-alias clert-l="clListEventRouters $@"
-alias clert-g="clGetEventRouter $@"
-alias clert-c="clCreateEventRouter $@"
-alias clert-u="clUpdateEventRouter $@"
-alias clert-d="clDeleteEventRouter $@"
+alias clert-l="clListEventRouters"
+alias clert-g="clGetEventRouter"
+alias clert-c="clCreateEventRouter"
+alias clert-u="clUpdateEventRouter"
+alias clert-d="clDeleteEventRouter"
 
 # Chat API
 
@@ -641,9 +641,9 @@ function clPostMessageText() {
 
 alias clconv-l='clChatOp GET conversations'
 alias cluconv-l='clChatOp GET users/me/conversations'
-alias clcpart-l="clListParticipants $@"
-alias clcmsg-c="clPostMessageText $@"
-alias clcacc-g="clGetChatAccountById $@"
+alias clcpart-l="clListParticipants"
+alias clcmsg-c="clPostMessageText"
+alias clcacc-g="clGetChatAccountById"
 
 # DataLake API
 
@@ -661,7 +661,7 @@ function clEventHistoryQuery() {
     clAnalyticsOp GET "events-records?\$filter=source%20eq%20'$1'%20and%20subject%20eq%20'$2'%20and%20occurredOn%20gt%20'$3'$4"
 }
 
-alias clehis-l="clEventHistoryQuery $@"
+alias clehis-l="clEventHistoryQuery"
 
 # Notifications API
 
@@ -711,10 +711,10 @@ function clDeletePlatform() {
     clSysManOp DELETE "platforms/$1"
 }
 
-alias clcomp-l='clListComponents $@'
-alias clplat-l='clListPlatforms $@'
-alias clplat-g='clGetPlatform $@'
-alias clplat-d='clDeletePlatform $@'
+alias clcomp-l='clListComponents'
+alias clplat-l='clListPlatforms'
+alias clplat-g='clGetPlatform'
+alias clplat-d='clDeletePlatform'
 
 # Billing API
 
@@ -725,8 +725,8 @@ function clBillingOp() {
     clOp $1 "https://billing$cloud.api.mitel.io/2019-03-01/$2"
 }
 
-alias cllic-l="clBillingOp GET licenses $@"
-alias clsub-l="clBillingOp GET subscriptions $@"
-alias clpsub-l="clBillingOp GET partner-subscriptions $@"
-alias clbu-l="clBillingOp GET users $@"
-alias clba-l="clBillingOp GET accounts $@"
+alias cllic-l="clBillingOp GET licenses"
+alias clsub-l="clBillingOp GET subscriptions"
+alias clpsub-l="clBillingOp GET partner-subscriptions"
+alias clbu-l="clBillingOp GET users"
+alias clba-l="clBillingOp GET accounts"

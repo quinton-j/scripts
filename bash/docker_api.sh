@@ -14,5 +14,5 @@ dockerGetLibraryTags() {
 }
 
 alias doc-ll='curl --silent https://registry.hub.docker.com/v2/repositories/library/?page_size=100'
-alias doc-gl='dockerGetLibrary $@'
-alias doc-glt='dockerGetLibraryTags $@'
+alias doc-gl='dockerGetLibrary'
+alias doc-glt='dockerGetLibraryTags'

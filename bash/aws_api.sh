@@ -22,38 +22,38 @@ function awsLambdaPutConcurrency() {
     aws --profile=$profile lambda put-function-concurrency --function-name $1 --reserved-concurrent-executions $2
 }
 
-alias awsl-lf='aws --profile=$profile lambda list-functions --query="Functions" $@'
-alias awsl-gf='aws --profile=$profile lambda get-function --query="Configuration" --function-name $@'
-alias awsl-df='aws --profile=$profile lambda delete-function --function-name $@'
+alias awsl-lf='aws --profile=$profile lambda list-functions --query="Functions"'
+alias awsl-gf='aws --profile=$profile lambda get-function --query="Configuration" --function-name'
+alias awsl-df='aws --profile=$profile lambda delete-function --function-name'
 
-alias awsl-la='aws --profile=$profile lambda list-aliases --query="Aliases" --function-name $@'
-alias awsl-lv='aws --profile=$profile lambda list-versions-by-function --query="Versions[*].{version:Version,modified:LastModified,revisionId:RevisionId}" --function-name $@'
-alias awsl-gp='aws --profile=$profile lambda get-policy --function-name $@'
-alias awsl-i='awsLambdaInvoke $@'
+alias awsl-la='aws --profile=$profile lambda list-aliases --query="Aliases" --function-name'
+alias awsl-lv='aws --profile=$profile lambda list-versions-by-function --query="Versions[*].{version:Version,modified:LastModified,revisionId:RevisionId}" --function-name'
+alias awsl-gp='aws --profile=$profile lambda get-policy --function-name'
+alias awsl-i='awsLambdaInvoke'
 
-alias awsl-gc='aws --profile=$profile lambda get-function-concurrency --function-name $@'
-alias awsl-pc='awsLambdaPutConcurrency $@'
-alias awsl-dc='aws --profile=$profile lambda delete-function-concurrency --function-name $@'
+alias awsl-gc='aws --profile=$profile lambda get-function-concurrency --function-name'
+alias awsl-pc='awsLambdaPutConcurrency'
+alias awsl-dc='aws --profile=$profile lambda delete-function-concurrency --function-name'
 
 # Pinpoint
 
 alias awspp-la='aws --profile=$profile pinpoint get-apps --query="ApplicationsResponse.{apps:Item[*].{name:Name,id:Id},nextToken:NextToken}"'
-alias awspp-gcc='aws --profile=$profile pinpoint get-gcm-channel --application-id=$@'
+alias awspp-gcc='aws --profile=$profile pinpoint get-gcm-channel --application-id '
 
 # Opensearch
 
 alias awsos-ld='aws --profile=$profile opensearch list-domain-names --query="DomainNames[].DomainName"'
-alias awsos-gd='aws --profile=$profile opensearch describe-domain --domain-name $@'
-alias awsos-gde='aws --profile=$profile opensearch describe-domain --query="DomainStatus.Endpoint" --output=text --domain-name $@'
+alias awsos-gd='aws --profile=$profile opensearch describe-domain --domain-name'
+alias awsos-gde='aws --profile=$profile opensearch describe-domain --query="DomainStatus.Endpoint" --output=text --domain-name'
 
 alias awsos-k='AWS_PROFILE=$profile ENDPOINT=$os_endpoint aws-es-kibana'
 
 # S3
 
 alias awss3-lb='aws --profile=$profile s3api list-buckets --query="Buckets[].Name"'
-alias awss3-gbp='aws --profile=$profile s3api get-bucket-policy --bucket $@'
-alias awss3-gba='aws --profile=$profile s3api get-bucket-acl --bucket $@'
-alias awss3-lbo='aws --profile=$profile s3api list-objects-v2 --bucket $@'
+alias awss3-gbp='aws --profile=$profile s3api get-bucket-policy --bucket'
+alias awss3-gba='aws --profile=$profile s3api get-bucket-acl --bucket'
+alias awss3-lbo='aws --profile=$profile s3api list-objects-v2 --bucket'
 
 # IAM
 
@@ -65,9 +65,9 @@ function awsGetRolePolicy() {
 }
 
 alias awsiam-lr='aws --profile=$profile iam list-roles --query="Roles[].RoleName"'
-alias awsiam-gra='aws --profile=$profile iam get-role --query="Role.Arn" --output=text --role-name $@'
-alias awsiam-lrp='aws --profile=$profile iam list-role-policies --role-name $@'
-alias awsiam-grp='awsGetRolePolicy $@'
+alias awsiam-gra='aws --profile=$profile iam get-role --query="Role.Arn" --output=text --role-name'
+alias awsiam-lrp='aws --profile=$profile iam list-role-policies --role-name'
+alias awsiam-grp='awsGetRolePolicy'
 
 # QuickSight
 
@@ -93,12 +93,12 @@ function awsQuickSightCreateIngestion() {
     aws --profile=$profile quicksight create-ingestion --ingestion-id=full-refresh-$timestamp --ingestion-type=$1 --aws-account-id=$2 --data-set-id=$3
 }
 
-alias awsqs-la='aws --profile=$profile quicksight list-analyses --query="AnalysisSummaryList[*].{id:AnalysisId,name:Name,status:Status}" --aws-account-id $@'
-alias awsqs-ga='awsQuickSightGetAnalysis $@'
-alias awsqs-ld='aws --profile=$profile quicksight list-data-sets --query="DataSetSummaries[*].{id:DataSetId,name:Name,mode:ImportMode,lastUpdated:LastUpdatedTime}" --aws-account-id $@'
-alias awsqs-li='awsQuickSightGetIngestions $@'
-alias awsqs-cii='awsQuickSightCreateIngestion INCREMENTAL_REFRESH $@'
-alias awsqs-cfi='awsQuickSightCreateIngestion FULL_REFRESH $@'
+alias awsqs-la='aws --profile=$profile quicksight list-analyses --query="AnalysisSummaryList[*].{id:AnalysisId,name:Name,status:Status}" --aws-account-id'
+alias awsqs-ga='awsQuickSightGetAnalysis'
+alias awsqs-ld='aws --profile=$profile quicksight list-data-sets --query="DataSetSummaries[*].{id:DataSetId,name:Name,mode:ImportMode,lastUpdated:LastUpdatedTime}" --aws-account-id'
+alias awsqs-li='awsQuickSightGetIngestions'
+alias awsqs-cii='awsQuickSightCreateIngestion INCREMENTAL_REFRESH'
+alias awsqs-cfi='awsQuickSightCreateIngestion FULL_REFRESH'
 
 ## Athena
 
@@ -132,19 +132,19 @@ function awsAthenaGetQueryResults() {
         jq --raw-output '.[] | map(.VarCharValue) | @csv'
 }
 
-alias awsath-sqe='awsAthenaStartQueryExecution $@'
+alias awsath-sqe='awsAthenaStartQueryExecution'
 alias awsath-lqe='aws --profile=$profile athena list-query-executions --query="QueryExecutionIds"'
-alias awsath-gqe='awsAthenaGetQueryExecution $@'
-alias awsath-gqr='awsAthenaGetQueryResults $@'
+alias awsath-gqe='awsAthenaGetQueryExecution'
+alias awsath-gqr='awsAthenaGetQueryResults'
 
 # Glue
 
 alias awsglue-lc='aws --profile=$profile glue list-crawlers --query=CrawlerNames'
-alias awsglue-gc='aws --profile=$profile glue get-crawler --query="Crawler" --name $@'
-alias awsglue-gcs='aws --profile=$profile glue get-crawler --query="Crawler.{name:Name,status:State,crawlElapsedTime:CrawlElapsedTime,lastCrawl:LastCrawl.{status:Status,start:StartTime}}" --name $@'
-alias awsglue-sc='aws --profile=$profile glue start-crawler --name $@'
+alias awsglue-gc='aws --profile=$profile glue get-crawler --query="Crawler" --name'
+alias awsglue-gcs='aws --profile=$profile glue get-crawler --query="Crawler.{name:Name,status:State,crawlElapsedTime:CrawlElapsedTime,lastCrawl:LastCrawl.{status:Status,start:StartTime}}" --name'
+alias awsglue-sc='aws --profile=$profile glue start-crawler --name'
 alias awsglue-ld='aws --profile=$profile glue get-databases --query="DatabaseList"'
-alias awsglue-lt='aws --profile=$profile glue get-tables --query="TableList[].{name:Name,columns:length(StorageDescriptor.Columns),paritionKeys:PartitionKeys,type:TableType}" --database-name $@'
+alias awsglue-lt='aws --profile=$profile glue get-tables --query="TableList[].{name:Name,columns:length(StorageDescriptor.Columns),paritionKeys:PartitionKeys,type:TableType}" --database-name'
 alias awsglue-lcm='aws --profile=$profile glue get-crawler-metrics --query=CrawlerMetricsList | jq "map({crawlerName:.CrawlerName,stillEstimating:.StillEstimating,lastRuntimeMins:(.LastRuntimeSeconds/60),medianRuntimeMins:(.MedianRuntimeSeconds/60),remainingMins:(.TimeLeftSeconds/60),tablesCreated:.TablesCreated,tablesUpdated:.TablesUpdated,tablesDeleted:.TablesDeleted})"'
 
 # SES
@@ -164,15 +164,15 @@ function awsSesListSuppressedDestinations() {
     rm $tmpFile
 }
 
-alias awsses-lsd='awsSesListSuppressedDestinations $@'
-alias awsses-gsd='aws sesv2 get-suppressed-destination --profile=$profile --query="SuppressedDestination" --email-address $@'
-alias awsses-dsd='aws sesv2 delete-suppressed-destination --profile=$profile --email-address $@'
+alias awsses-lsd='awsSesListSuppressedDestinations'
+alias awsses-gsd='aws sesv2 get-suppressed-destination --profile=$profile --query="SuppressedDestination" --email-address'
+alias awsses-dsd='aws sesv2 delete-suppressed-destination --profile=$profile --email-address'
 
 # DynamoDB
 
 alias awsddb-lt='aws --profile=$profile dynamodb list-tables --query="TableNames"'
-alias awsddb-it='aws --profile=$profile dynamodb describe-table --table-name $@'
-alias awsddb-dt='aws --profile=$profile dynamodb delete-table --table-name $@'
+alias awsddb-it='aws --profile=$profile dynamodb describe-table --table-name'
+alias awsddb-dt='aws --profile=$profile dynamodb delete-table --table-name'
 
 alias awsddb-qa='aws --profile=$profile dynamodb execute-statement --statement="select * from \"$table\""'
 alias awsddb-qd='aws --profile=$profile dynamodb execute-statement --statement="delete from \"$table\" where $column = '\''$value'\''"'
@@ -180,43 +180,43 @@ alias awsddb-qi='aws --profile=$profile dynamodb execute-statement --statement="
 alias awsddb-qu='aws --profile=$profile dynamodb execute-statement --statement="update \"$table\" set $value where $condition returning all new *'
 
 alias awsddb-lb='aws --profile=$profile dynamodb list-backups'
-alias awsddb-cb='aws --profile=$profile dynamodb create-backup --table-name $table --backup-name $@'
+alias awsddb-cb='aws --profile=$profile dynamodb create-backup --table-name $table --backup-name'
 alias awsddb-ib='aws --profile=$profile dynamodb describe-backup --backup-arn $table'
-alias awsddb-db='aws --profile=$profile dynamodb restore-table-from-backup --target-table-name=$table --backup-arn $@'
+alias awsddb-db='aws --profile=$profile dynamodb restore-table-from-backup --target-table-name=$table --backup-arn'
 
 alias awsddb-icb='aws --profile=$profile dynamodb describe-continuous-backups --table-name $table'
 
 # SSM Parameter Store
 
 alias awsssm-lp='aws --profile=$profile ssm describe-parameters'
-alias awsssm-gp='aws --profile=$profile ssm get-parameter --with-decryption --name $@'
-alias awsssm-dp='aws --profile=$profile ssm delete-parameter --name $@'
-alias awsssm-up='aws --profile=$profile ssm put-parameter --overwrite --type=String $@'
+alias awsssm-gp='aws --profile=$profile ssm get-parameter --with-decryption --name'
+alias awsssm-dp='aws --profile=$profile ssm delete-parameter --name'
+alias awsssm-up='aws --profile=$profile ssm put-parameter --overwrite --type=String'
 
 # Codepipline
 
 alias awscp-lp='aws --profile=$profile codepipeline list-pipelines --query="pipelines"'
-alias awscp-lpe='aws --profile=$profile codepipeline list-pipeline-executions --query="pipelineExecutionSummaries" --pipeline-name $@'
-alias awscp-lpace='aws --profile=$profile codepipeline list-action-executions --query="actionExecutionDetails" --pipeline-name $@'
+alias awscp-lpe='aws --profile=$profile codepipeline list-pipeline-executions --query="pipelineExecutionSummaries" --pipeline-name'
+alias awscp-lpace='aws --profile=$profile codepipeline list-action-executions --query="actionExecutionDetails" --pipeline-name'
 alias awscp-gps="aws --profile=\$profile codepipeline get-pipeline-state  --name=\$pipeline --query=\"stageStates[].{ name: stageName, status: latestExecution.status, actions: actionStates}\" | jq"
 ## requires profile, pipeline, stageName, actionName, reason, and token to be set
 alias awscp-pa='aws --profile=$profile codepipeline --pipeline-name=$pipeline put-approval-result --stage-name=$stageName --action-name=$actionName --result="status=Approved,summary=$reason" --token=$token'
-alias awscp-spe='aws --profile=$profile codepipeline start-pipeline-execution --name $@'
+alias awscp-spe='aws --profile=$profile codepipeline start-pipeline-execution --name'
 
 
 # CodeBuild
 
 alias awscb-lp='aws --profile=$profile codebuild list-projects --query="projects"'
-alias awscb-lb='aws --profile=$profile codebuild list-builds-for-project --query="ids" --project-name $@'
-alias awscb-gb='aws --profile=$profile codebuild batch-get-builds --query="builds[0]" --ids $@'
+alias awscb-lb='aws --profile=$profile codebuild list-builds-for-project --query="ids" --project-name'
+alias awscb-gb='aws --profile=$profile codebuild batch-get-builds --query="builds[0]" --ids'
 
 # Secrets Manager
 
 alias awssec-ls='aws --profile=$profile secretsmanager list-secrets --query="SecretList"'
-alias awssec-gs='aws --profile=$profile secretsmanager describe-secret --secret-id $@'
-alias awssec-gsv='aws --profile=$profile secretsmanager get-secret-value --secret-id $@'
-alias awssec-ds='aws --profile=$profile secretsmanager delete-secret --secret-id $@'
-alias awssec-us='aws --profile=$profile secretsmanager put-secret-value --secret-id $@'
+alias awssec-gs='aws --profile=$profile secretsmanager describe-secret --secret-id'
+alias awssec-gsv='aws --profile=$profile secretsmanager get-secret-value --secret-id'
+alias awssec-ds='aws --profile=$profile secretsmanager delete-secret --secret-id'
+alias awssec-us='aws --profile=$profile secretsmanager put-secret-value --secret-id'
 
 # CloudFormation
 
