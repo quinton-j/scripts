@@ -573,7 +573,7 @@ function clChatOp() {
     # Executes a curl get request with the CL auth_token for the given method ($1) chat subresource ($2)
     # Expects env: auth_token, cloud
 
-    clOp $1 "https://chat$cloud.api.mitel.io/2017-09-01/$2"
+    clOp $1 "https://chat$cloud.api.mitel.io/2017-09-01/$2$3"
 }
 
 function clChatDataOp() {
