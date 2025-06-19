@@ -725,8 +725,8 @@ function clBillingOp() {
     clOp $1 "https://billing$cloud.api.mitel.io/2019-03-01/$2"
 }
 
-alias cllic-l="clBillingOp GET licenses"
-alias clsub-l="clBillingOp GET subscriptions"
-alias clpsub-l="clBillingOp GET partner-subscriptions"
-alias clbu-l="clBillingOp GET users"
-alias clba-l="clBillingOp GET accounts"
+alias clbill-ll="clBillingOp GET licenses"
+alias clbill-ls="clBillingOp GET subscriptions"
+alias clbill-lps="clBillingOp GET partner-subscriptions"
+alias clbill-lu="clBillingOp GET users"
+alias clbill-la="clBillingOp GET accounts"
