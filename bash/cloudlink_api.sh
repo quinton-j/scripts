@@ -165,6 +165,14 @@ function clGetIdentityProvder() {
     clAuthOp GET "identityProviders/$1"
 }
 
+function clGetWellKnownJwks() {
+    # Gets the identity providers for the account id ($1)
+    # Expects env: auth_token, cloud
+
+    local accountId=${1:-'*'}
+    clAuthOp GET "accounts/$accountId/.well-known/jwks.json"
+}
+
 export clCredentialsFile=~/.cloudlink/credentials
 alias cltok-g="clAuthOp GET token"
 alias cltok-lp="clAuthLoginPassword"
@@ -184,6 +192,8 @@ alias clapp-u="clUpdateApplication"
 alias clsso-sg="clAuthOp GET saml2/status?username="
 alias clidp-l="clListIdentityProvders"
 alias clidp-g="clGetIdentityProvders"
+
+alias cljwks-g="clGetWellKnownJwks"
 
 # Admin API
 
