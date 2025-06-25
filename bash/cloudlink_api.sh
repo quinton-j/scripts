@@ -675,14 +675,41 @@ alias clehis-l="clEventHistoryQuery"
 
 # Notifications API
 
-function clNotificationsOp() {
+function clNotifyOp() {
     # Executes a curl get request with the CL auth_token for the given method ($1) subresource ($2)
     # Expects env: auth_token, cloud
 
     clOp $1 "https://notifications$cloud.api.mitel.io/2017-09-01/$2"
 }
 
-alias clsub-l="clNotificationsOp GET subscriptions"
+function clGetNotifySubscriptions() {
+    # Gets notification subscriptions
+    # Expects env: auth_token, cloud
+
+    clNotifyOp GET subscriptions
+}
+
+function clDeleteNotifySubscription() {
+    # Deletes a subscription with the given subscriptionId ($1)
+    # Expects env: auth_token, cloud
+
+    clNotifyOp DELETE subscriptions/$1
+}
+
+function clDeleteNotifySubscriptions() {
+    # Deletes all subscriptions
+    # Expects env: auth_token, cloud
+
+    local subscriptionIds=$(clGetNotifySubscriptions | jq  --raw-output '._embedded.items[].subscriptionId')
+    for subscriptionId in $subscriptionIds; do
+        echo "Deleting subscription $subscriptionId"
+        clDeleteNotifySubscription $subscriptionId
+    done
+}
+
+alias clnsub-l="clGetNotifySubscriptions"
+alias clnsub-d="clDeleteNotifySubscription"
+alias clnsub-da="clDeleteNotifySubscriptions"
 
 # System manager API
 
