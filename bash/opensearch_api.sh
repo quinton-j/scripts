@@ -39,7 +39,7 @@ function opensearchCat() {
     # Gets _cat subresource ($1) from an OS cluster with the given columns ($2)
     # Expects env: os_endpoint to be set
 
-     opensearchOp GET "_cat/$1?v&h=$2"
+    opensearchOp GET "_cat/$1?v&h=$2"
 }
 
 # Indexes
@@ -122,7 +122,7 @@ function opensearchCreateIndex() {
     # Create an index ($1) in an OS cluster with number of primary ($2) and replica ($3) shards
     # Expects env: os_endpoint to be set
 
-    opensearchOp PUT  $1 \
+    opensearchOp PUT $1 \
         "{\"mappings\":{},\"settings\":{\"number_of_shards\":$2,\"number_of_replicas\":$3}}"
 }
 
@@ -133,7 +133,6 @@ function opensearchUpdateIndexSettings() {
     opensearchOp PUT "$1/_settings" \
         "{\"index\":{\"number_of_replicas\":$2}}"
 }
-
 
 # Snapshot repositories
 
@@ -179,9 +178,9 @@ function opensearchRestoreSnapshot() {
     # Restore a snapshot with name ($2) for the given repository ($1) in an OS cluster
     # Expects env: os_endpoint to be set
 
-    local timestamp=$(date --utc +%Y-%m-%dt%Hh%Mm%Ssz);
+    local timestamp=$(date --utc +%Y-%m-%dt%Hh%Mm%Ssz)
     opensearchDataOp POST "_snapshot/$1/$2/_restore" \
-        "{\"rename_pattern\":\"(.+)\",\"rename_replacement\":\"restore_${timestamp}_\$1\"}";
+        "{\"rename_pattern\":\"(.+)\",\"rename_replacement\":\"restore_${timestamp}_\$1\"}"
 }
 
 function opensearchDeleteSnapshot() {
@@ -200,13 +199,35 @@ function opensearchQuery() {
     opensearchDataOp POST "$1/_search" $2
 }
 
+function opensearchTermQuery() {
+    # Search for documents where field ($2) equals value ($3) in index ($1)
+    # Expects env: os_endpoint to be set
+
+    opensearchQuery $1 \
+        "{\"query\":{\"term\":{\"$2\":\"$3\"}}}"
+}
+
 function opensearchQueryDocsByYear() {
     # Query count of docs by year in index ($1)
     # Expects env: os_endpoint to be set
 
     opensearchQuery $1 \
-        "{\"size\":0,\"aggs\":{\"docsTimeAggregate\":{\"date_histogram\":{\"field\":\"createdOn\",\"calendar_interval\":\"year\",\"order\":{\"_key\":\"asc\"},\"min_doc_count\":1},\"aggs\":{\"oldestBucket\":{\"min\":{\"field\":\"createdOn\"}}}}}}" \
-        | jq '{took,docsByYear:(.aggregations.docsTimeAggregate.buckets | map({ year:.key_as_string,count:.doc_count,oldest:.oldestBucket.value_as_string}))}'
+        "{\"size\":0,\"aggs\":{\"docsTimeAggregate\":{\"date_histogram\":{\"field\":\"createdOn\",\"calendar_interval\":\"year\",\"order\":{\"_key\":\"asc\"},\"min_doc_count\":1},\"aggs\":{\"oldestBucket\":{\"min\":{\"field\":\"createdOn\"}}}}}}" |
+        jq '{took,docsByYear:(.aggregations.docsTimeAggregate.buckets | map({ year:.key_as_string,count:.doc_count,oldest:.oldestBucket.value_as_string}))}'
+}
+
+function opensearchGetDoc() {
+    # Gets an OS doc with ($2) from the given index ($1)
+    # Expects env: os_endpoint to be set
+
+    opensearchOp GET  "$1/_doc/$2"
+}
+
+function opensearchDeleteDoc() {
+    # Deletes an OS doc with ($2) from the given index ($1)
+    # Expects env: os_endpoint to be set
+
+    opensearchOp DELETE  "$1/_doc/$2"
 }
 
 alias awsos-c='awsOpensearchConnect'
@@ -243,5 +264,8 @@ alias osss-c='opensearchTakeSnapshot'
 alias osss-r='opensearchRestoreSnapshot'
 alias ossss-l='opensearchOp GET _snapshot/_status'
 
-alias osq-r='opensearchQuery'
-alias osq-dby='opensearchQueryDocsByYear'
+alias osdoc-q='opensearchQuery'
+alias osdoc-qt='opensearchTermQuery'
+alias osdoc-lby='opensearchQueryDocsByYear'
+alias osdoc-g='opensearchGetDoc'
+alias osdoc-d='opensearchDeleteDoc'
