@@ -266,7 +266,7 @@ function clListAccountsByPartnerId() {
     # Expects env: auth_token, cloud
 
     clAdminOp GET "accounts?\$top=10000&\$expand=tags&\$filter=partnerId%20eq%20'$1'" |
-        jq '._embedded.items | map({name,accountId,accountNumber,partnerId,organizationId,sapId:.tags.mitel_connect_refs.sap_references_primary_1,createdOn,createdBy})'
+        jq '._embedded.items | map({name,accountId,accountNumber,partnerId,active,organizationId,sapId:.tags.mitel_connect_refs.sap_references_primary_1,createdOn,createdBy})'
 }
 
 function clListUsersByRole() {
