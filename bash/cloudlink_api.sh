@@ -69,11 +69,11 @@ function clAuthLoginPassword() {
     if [ -z "$username" ]; then
         read -r -p 'Username: ' username
     fi
-    
+
     if [ -z "$accountid" ]; then
         read -r -p 'AccountId: ' accountid
     fi
-    
+
     if [ -z "$password" ]; then
         read -r -p 'Password: ' -s password
         echo
@@ -309,6 +309,13 @@ function clGetPolicy() {
     # Expects env: auth_token, cloud
 
     clAdminOp GET "accounts/$1/policies/$2"
+}
+
+function clPutPolicy() {
+    # Gets policy with accountId ($1) and policyId ($2), and body ($3)
+    # Expects env: auth_token, cloud
+
+    clAdminDataOp PUT "accounts/$1/policies/$2" $3
 }
 
 function clListPolicyStatements() {
@@ -700,7 +707,7 @@ function clDeleteNotifySubscriptions() {
     # Deletes all subscriptions
     # Expects env: auth_token, cloud
 
-    local subscriptionIds=$(clGetNotifySubscriptions | jq  --raw-output '._embedded.items[].subscriptionId')
+    local subscriptionIds=$(clGetNotifySubscriptions | jq --raw-output '._embedded.items[].subscriptionId')
     for subscriptionId in $subscriptionIds; do
         echo "Deleting subscription $subscriptionId"
         clDeleteNotifySubscription $subscriptionId
@@ -767,3 +774,53 @@ alias clbill-ls="clBillingOp GET subscriptions"
 alias clbill-lps="clBillingOp GET partner-subscriptions"
 alias clbill-lu="clBillingOp GET users"
 alias clbill-la="clBillingOp GET accounts"
+
+# Presence API
+
+function clPresenceOp() {
+    # Executes a curl request with the CL auth_token for the given method ($1) presence resource ($2)
+    # Expects env: auth_token, cloud
+
+    clOp $1 "https://presence$cloud.api.mitel.io/2017-09-01/$2"
+}
+
+function clPresenceDataOp() {
+    # Executes a curl request with the CL auth_token for the given method ($1) presence resource ($2) and data ($3)
+    # Expects env: auth_token, cloud
+
+    clDataOp $1 "https://presence$cloud.api.mitel.io/2017-09-01/$2" $3
+}
+
+function clListPresentities() {
+    # List the presenties in the account with optional query params ($1)
+    # Expects env: auth_token, cloud
+
+    clPresenceOp GET "presentities$1"
+}
+
+
+function clGetPresentity() {
+    # Gets the presence for the provided presentityId ($1) and optional query params ($2)
+    # Expects env: auth_token, cloud
+
+    clPresenceOp GET "presentities/$1$2"
+}
+
+function clPatchSource() {
+    # Run the PATCH presenties operation for the given accountId ($1), principalId ($2), sourceType ($3), sourceId ($4), status ($5), reason ($6), and extended ($7)
+    # Expects env: auth_token, cloud
+
+    local accountId=$1
+    local principalId=$2
+    local sourceType=$3
+    local sourceId=$4
+    local status=$5
+    local reason=$6
+    local extended=$7
+
+    clPresenceDataOp PATCH presentities "{\"ops\":[{\"op\":\"replace\",\"path\":\"/$principalId/categories/$sourceType/$sourceId\",\"value\":{\"accountId\":\"$accountId\",\"status\":\"$status\",\"reason\":\"$reason\",\"extended\":$extended}}]}"
+}
+
+alias clpres-l="clListPresentities"
+alias clpres-g="clGetPresentity"
+alias clsource-p="clPatchSource"
