@@ -452,6 +452,21 @@ function clGetGroup() {
     clAdminOp GET "accounts/$1/groups/$2"
 }
 
+function clListSites() {
+    # Lists the sites for the provided accountId ($1)
+    # Expects env: auth_token, cloud
+
+    clAdminOp GET "accounts/$1/sites$2" | jq '._embedded.items//[] | map(del(._links))'
+}
+
+function clListAdminServices() {
+    # Lists the services for the provided accountId ($1)
+    # Expects env: auth_token, cloud
+
+    clAdminOp GET "accounts/$1/services$2" \
+        | jq '._embedded.items//[] | map(del(._links,.pbx_trunk_password,.authentication,.pbx.connection_password))'
+}
+
 alias clacc-l="clListAccounts"
 alias clacc-g="clGetAccount"
 alias clacc-u="clPutAccount"
@@ -490,6 +505,10 @@ alias clclient-g="clGetClient"
 alias clgroup-l="clListGroups"
 alias clgroup-g="clGetGroup"
 
+alias clsite-l="clListSites"
+
+alias clservice-l="clListAdminServices"
+
 # Director API
 
 function clDirectorOp() {
@@ -513,7 +532,7 @@ function clListIdentities() {
     clDirectorOp GET "identities?\$expand=null$1"
 }
 
-function clListServices() {
+function clListDirectorServices() {
     # Lists services
     # Expects env: auth_token, cloud
 
@@ -574,7 +593,7 @@ alias clid-l="clListIdentities"
 alias clid-g="clDirectorOp GET identities/"
 alias clid-d="clDirectorOp DELETE identities/"
 
-alias clser-l="clListServices"
+alias clser-l="clListDirectorServices"
 alias clser-d="clDeleteService"
 alias clser-u="clUpsertService"
 
@@ -778,7 +797,7 @@ alias clbill-la="clBillingOp GET accounts"
 # Presence API
 
 function clPresenceOp() {
-    # Executes a curl request with the CL auth_token for the given method ($1) presence resource ($2)
+    # Executes a curl request with the CL auth_token for the given method ($1) and presence resource ($2)
     # Expects env: auth_token, cloud
 
     clOp $1 "https://presence$cloud.api.mitel.io/2017-09-01/$2"
@@ -824,3 +843,48 @@ function clPatchSource() {
 alias clpres-l="clListPresentities"
 alias clpres-g="clGetPresentity"
 alias clsource-p="clPatchSource"
+
+# Media API
+
+function clMediaOp() {
+    # Executes a curl request with the CL auth_token for the given method ($1) and media resource ($2)
+    # Expects env: auth_token, cloud
+
+    clOp $1 "https://media$cloud.api.mitel.io/2017-09-01/$2"
+}
+
+function clMediaOp() {
+    # Executes a curl request with the CL auth_token for the given method ($1) and media resource ($2)
+    # Expects env: auth_token, cloud
+
+    clOp $1 "https://media$cloud.api.mitel.io/2017-09-01/$2"
+}
+
+function clGatewayLinks() {
+    # Get the Media gateway links for the given accountId ($1) and siteId ($2)
+    # Expects env: auth_token, cloud
+
+    clMediaOp GET "accounts/$1/sites/$2/gateway-links" \
+        | jq '._embedded.items//[] | map(del(._links,.authentication))'
+}
+
+alias clgwlink-l="clGatewayLinks"
+
+# Tunnel API
+
+function clTunnelOp() {
+    # Executes a curl request with the CL auth_token for the given method ($1) and tunnel resource ($2)
+    # Expects env: auth_token, cloud
+
+    clOp $1 "https://tunnel$cloud.api.mitel.io/2017-09-01/$2"
+}
+
+function clPbxLinks() {
+    # Get the tunnel PBX links for the given accountId ($1) and siteId ($2)
+    # Expects env: auth_token, cloud
+
+    clTunnelOp GET "premise/accounts/$1/sites/$2/settings/pbxlinks" \
+        | jq '._embedded.items//[] | map(del(.connection_password,._links))'
+}
+
+alias clplink-l="clPbxLinks"
