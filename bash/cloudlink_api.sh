@@ -144,6 +144,13 @@ function clGetApplication() {
     clAuthOp GET "applications/$1"
 }
 
+function clList3rdPartyApplications() {
+    # Lists the applications
+    # Expects env: auth_token, cloud
+
+    clListApplications "?\$top=1000$1" | jq '._embedded.items | map(select(.resource//"" | contains("3pa")))'
+}
+
 function clUpdateApplication() {
     # Gets the application for provided appId ($1) and data ($2)
     # Expects env: auth_token, cloud
@@ -188,6 +195,7 @@ alias clcred-d="clDeleteCredential"
 alias clapp-l="clListApplications"
 alias clapp-g="clGetApplication"
 alias clapp-u="clUpdateApplication"
+alias cl3pa-l="clList3rdPartyApplications"
 
 alias clsso-sg="clAuthOp GET saml2/status?username="
 alias clidp-l="clListIdentityProvders"
