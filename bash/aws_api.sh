@@ -227,3 +227,8 @@ alias awscform-lse='aws --profile=$profile cloudformation describe-stack-events 
 
 alias awscform-dsd='aws --profile=$profile cloudformation detect-stack-drift --stack-name=$stackName | jq'
 alias awscform-lsd='aws --profile=$profile cloudformation describe-stack-resource-drifts --query=""StackResourceDrifts --stack-name=$stackName | jq'
+
+# Route53
+
+alias awsr53-lz='aws --profile=$profile route53 list-hosted-zones --query="HostedZones" | jq'
+alias awsr53-ld='aws --profile=$profile route53domains list-domains --query="Domains" | jq'
