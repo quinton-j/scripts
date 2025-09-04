@@ -833,6 +833,20 @@ function clGetPresentity() {
     clPresenceOp GET "presentities/$1$2"
 }
 
+function clListSources() {
+    # Lists the sources for the provided presentityId ($1) and source category ($2)
+    # Expects env: auth_token, cloud
+
+    clPresenceOp GET "presentities/$1/categories/$2"
+}
+
+function clGetSource() {
+    # Lists the sources for the provided presentityId ($1), source category ($2), and sourceId ($3)
+    # Expects env: auth_token, cloud
+
+    clPresenceOp GET "presentities/$1/categories/$2/$3"
+}
+
 function clPatchSource() {
     # Run the PATCH presenties operation for the given accountId ($1), principalId ($2), sourceType ($3), sourceId ($4), status ($5), reason ($6), and extended ($7)
     # Expects env: auth_token, cloud
@@ -851,6 +865,8 @@ function clPatchSource() {
 alias clpres-l="clListPresentities"
 alias clpres-g="clGetPresentity"
 alias clsource-p="clPatchSource"
+alias clsource-l="clListSources"
+alias clsource-g="clGetSource"
 
 # Media API
 
