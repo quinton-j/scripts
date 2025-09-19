@@ -158,7 +158,14 @@ function clUpdateApplication() {
     clAuthDataOp PUT "applications/$1" $2
 }
 
-function clListIdentityProvders() {
+function clDeleteApplication() {
+    # Deletes the application for provided appId ($1)
+    # Expects env: auth_token, cloud
+
+    clAuthOp DELETE "applications/$1"
+}
+
+function clListIdentityProviders() {
     # Gets the identity providers for account of the token
     # Expects env: auth_token, cloud
 
@@ -195,11 +202,12 @@ alias clcred-d="clDeleteCredential"
 alias clapp-l="clListApplications"
 alias clapp-g="clGetApplication"
 alias clapp-u="clUpdateApplication"
+alias clapp-d="clDeleteApplication"
 alias cl3pa-l="clList3rdPartyApplications"
 
 alias clsso-sg="clAuthOp GET saml2/status?username="
-alias clidp-l="clListIdentityProvders"
-alias clidp-g="clGetIdentityProvders"
+alias clidp-l="clListIdentityProviders"
+alias clidp-g="clGetIdentityProviders"
 
 alias cljwks-g="clGetWellKnownJwks"
 
