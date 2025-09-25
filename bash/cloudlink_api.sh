@@ -16,6 +16,13 @@ function oDataFilter() {
     echo $f
 }
 
+function clHeadOp() {
+    # Executes a curl request with the CL auth_token for the given method ($1) and URL ($2)
+    # Expects env: auth_token
+
+    curl --head --header 'Content-Type: application/json' --header "Authorization: Bearer $auth_token" $1
+}
+
 function clOp() {
     # Executes a curl request with the CL auth_token for the given method ($1) and URL ($2)
     # Expects env: auth_token
@@ -172,7 +179,7 @@ function clListIdentityProviders() {
     clAuthOp GET "identityProviders"
 }
 
-function clGetIdentityProvder() {
+function clGetIdentityProvider() {
     # Gets the identity providers for the provided id ($1)
     # Expects env: auth_token, cloud
 
@@ -207,11 +214,19 @@ alias cl3pa-l="clList3rdPartyApplications"
 
 alias clsso-sg="clAuthOp GET saml2/status?username="
 alias clidp-l="clListIdentityProviders"
-alias clidp-g="clGetIdentityProviders"
+alias clidp-g="clGetIdentityProvider"
+alias clscim-h="clCheckScim"
 
 alias cljwks-g="clGetWellKnownJwks"
 
 # Admin API
+
+function clAdminHeadOp() {
+    # Executes a curl request with the CL auth_token for the given auth resource ($1) and optional params ($2)
+    # Expects env: auth_token, cloud
+
+    clHeadOp "https://admin$cloud.api.mitel.io/2017-09-01/$1$2"
+}
 
 function clAdminOp() {
     # Executes a curl request with the CL auth_token for the given method ($1) admin resource ($2)
@@ -483,6 +498,13 @@ function clListAdminServices() {
         | jq '._embedded.items//[] | map(del(._links,.pbx_trunk_password,.authentication,.pbx.connection_password))'
 }
 
+function clHeadScim() {
+    # Gets the identity providers for the account id ($1)
+    # Expects env: auth_token, cloud
+
+    clAdminHeadOp "accounts/$1/scimkey"
+}
+
 alias clacc-l="clListAccounts"
 alias clacc-g="clGetAccount"
 alias clacc-u="clPutAccount"
@@ -493,6 +515,8 @@ alias clacc-lbn="clListAccountsContainingName"
 
 alias clatag-u="clPutAccountTag"
 alias clatag-d="clDeleteAccountTag"
+
+alias clscim-h="clHeadScim"
 
 alias clpart-g="clGetPartner"
 alias clpart-l="clListPartners"
