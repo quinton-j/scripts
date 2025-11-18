@@ -198,7 +198,7 @@ alias awsssm-up='aws --profile=$profile ssm put-parameter --overwrite --type=Str
 alias awscp-lp='aws --profile=$profile codepipeline list-pipelines --query="pipelines"'
 alias awscp-lpe='aws --profile=$profile codepipeline list-pipeline-executions --query="pipelineExecutionSummaries" --pipeline-name'
 alias awscp-lpace='aws --profile=$profile codepipeline list-action-executions --query="actionExecutionDetails" --pipeline-name'
-alias awscp-gps="aws --profile=\$profile codepipeline get-pipeline-state  --name=\$pipeline --query=\"stageStates[].{ name: stageName, status: latestExecution.status, actions: actionStates}\" | jq"
+alias awscp-gps="aws --profile=\$profile codepipeline get-pipeline-state --query=\"stageStates[].{ name: stageName, status: latestExecution.status, actions: actionStates}\" --name "
 ## requires profile, pipeline, stageName, actionName, reason, and token to be set
 alias awscp-pa='aws --profile=$profile codepipeline --pipeline-name=$pipeline put-approval-result --stage-name=$stageName --action-name=$actionName --result="status=Approved,summary=$reason" --token=$token'
 alias awscp-spe='aws --profile=$profile codepipeline start-pipeline-execution --name'
