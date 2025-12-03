@@ -41,6 +41,8 @@ function clDataOp() {
 }
 
 alias odfilter="oDataFilter"
+alias dle="jq 'del(._links ,._embedded)'"
+alias dmeta="jq 'del(.createdOn ,.createdBy ,.modifiedOn ,.modifiedBy)'"
 
 # Auth API
 
@@ -473,14 +475,28 @@ function clListGroups() {
     # Lists the clients for the provided accountId ($1)
     # Expects env: auth_token, cloud
 
-    clAdminOp GET "accounts/$1/groups$2" | jq '._embedded.items//[]'
+    clAdminOp GET "accounts/$1/groups$2"
 }
 
 function clGetGroup() {
-    # Gets the clients for the provided accountId ($1) and clientId ($2)
+    # Gets the clients for the provided accountId ($1) and groupId ($2)
     # Expects env: auth_token, cloud
 
     clAdminOp GET "accounts/$1/groups/$2"
+}
+
+function clListGroupMembers() {
+    # Lists the clients for the provided accountId ($1) and groupId ($2)
+    # Expects env: auth_token, cloud
+
+    clAdminOp GET "accounts/$1/groups/$2/members"
+}
+
+function clGetGroupMember() {
+    # Gets the clients for the provided accountId ($1), groupId ($2), and memberId ($3)
+    # Expects env: auth_token, cloud
+
+    clAdminOp GET "accounts/$1/groups/$2/members/$3"
 }
 
 function clListSites() {
@@ -544,6 +560,8 @@ alias clclient-g="clGetClient"
 
 alias clgroup-l="clListGroups"
 alias clgroup-g="clGetGroup"
+alias clgmem-l="clListGroupMembers"
+alias clgmem-g="clGetGroupMember"
 
 alias clsite-l="clListSites"
 

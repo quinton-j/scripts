@@ -203,7 +203,6 @@ alias awscp-gps="aws --profile=\$profile codepipeline get-pipeline-state --query
 alias awscp-pa='aws --profile=$profile codepipeline --pipeline-name=$pipeline put-approval-result --stage-name=$stageName --action-name=$actionName --result="status=Approved,summary=$reason" --token=$token'
 alias awscp-spe='aws --profile=$profile codepipeline start-pipeline-execution --name'
 
-
 # CodeBuild
 
 alias awscb-lp='aws --profile=$profile codebuild list-projects --query="projects"'
