@@ -180,11 +180,13 @@ alias awsddb-qi='aws --profile=$profile dynamodb execute-statement --statement="
 alias awsddb-qu='aws --profile=$profile dynamodb execute-statement --statement="update \"$table\" set $value where $condition returning all new *'
 
 alias awsddb-lb='aws --profile=$profile dynamodb list-backups'
-alias awsddb-cb='aws --profile=$profile dynamodb create-backup --table-name $table --backup-name'
-alias awsddb-ib='aws --profile=$profile dynamodb describe-backup --backup-arn $table'
-alias awsddb-db='aws --profile=$profile dynamodb restore-table-from-backup --target-table-name=$table --backup-arn'
+alias awsddb-cb='aws --profile=$profile dynamodb create-backup --table-name $sourceTable --backup-name'
+alias awsddb-ib='aws --profile=$profile dynamodb describe-backup --backup-arn'
+alias awsddb-rb='aws --profile=$profile dynamodb restore-table-from-backup --target-table-name=$targetTable --backup-arn'
+alias awsddb-db='aws --profile=$profile dynamodb delete-backup --backup-arn'
 
-alias awsddb-icb='aws --profile=$profile dynamodb describe-continuous-backups --table-name $table'
+alias awsddb-icb='aws --profile=$profile dynamodb describe-continuous-backups --table-name'
+alias awsddb-rcb='aws --profile=$profile dynamodb restore-table-to-point-in-time --use-latest-restorable-time --source-table-name=$sourceTable --target-table-name'
 
 # SSM Parameter Store
 
