@@ -433,6 +433,14 @@ function clDeleteUser() {
     clAdminOp DELETE "accounts/$1/users/$2"
 }
 
+function clPutPassword() {
+    # Updates the user with accountId ($1), userId ($2), action ($3), and password ($4)
+    # Expects env: auth_token, cloud
+
+    clAdminDataOp PUT "accounts/$1/users/$2/password" "{\"action\":\"$3\",\"password\":\"$4\"}" \
+        | jq 'del(.sipPassword)'
+}
+
 function clPutUserTag() {
     # Updates the user with accountId ($1), userId ($2), tagId ($3) and tag value ($4)
     # Expects env: auth_token, cloud
@@ -555,6 +563,9 @@ alias cluser-u="clPutUser"
 alias cluser-c="clPostUser"
 alias cluser-d="clDeleteUser"
 alias cluser-mu="clPatchUsers"
+
+alias clupass-u="clPutPassword"
+
 alias clutag-u="clPutUserTag"
 alias clutag-d="clDeleteUserTag"
 
