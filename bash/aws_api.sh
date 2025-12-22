@@ -45,6 +45,7 @@ alias awspp-gcc='aws --profile=$profile pinpoint get-gcm-channel --application-i
 alias awsos-ld='aws --profile=$profile opensearch list-domain-names --query="DomainNames[].DomainName"'
 alias awsos-gd='aws --profile=$profile opensearch describe-domain --domain-name'
 alias awsos-gde='aws --profile=$profile opensearch describe-domain --query="DomainStatus.Endpoint" --output=text --domain-name'
+alias awsos-dd='aws --profile=$profile opensearch delete-domain --domain-name'
 
 alias awsos-k='AWS_PROFILE=$profile ENDPOINT=$os_endpoint aws-es-kibana'
 
