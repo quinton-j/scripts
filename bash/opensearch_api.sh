@@ -134,6 +134,22 @@ function opensearchUpdateIndexSettings() {
         "{\"index\":{\"number_of_replicas\":$2}}"
 }
 
+# Aliases
+
+function opensearchCreateAlias() {
+    # Create an alias ($1) for an index ($2) in an OS cluster
+    # Expects env: os_endpoint to be set
+
+    opensearchOp PUT "$2/_alias/$1"
+}
+
+function opensearchDeleteAlias() {
+    # Delete an alias ($1) from an index ($2) in an OS cluster
+    # Expects env: os_endpoint to be set
+
+    opensearchOp DELETE "$2/_alias/$1"
+}
+
 # Snapshot repositories
 
 function opensearchAddS3Repository() {
@@ -254,6 +270,8 @@ alias osind-sro='opensearchSetIndexReadOnly'
 alias osind-srw='opensearchSetIndexReadWrite'
 
 alias osali-l='opensearchCat aliases alias,index,filter,routing.index,routing.search,is_write_index'
+alias osali-c='opensearchCreateAlias'
+alias osali-d='opensearchDeleteAlias'
 
 alias osssr-l='opensearchOp GET _snapshot'
 alias osssr-as3='opensearchAddS3Repository'
