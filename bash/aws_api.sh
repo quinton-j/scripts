@@ -234,3 +234,15 @@ alias awscform-lsd='aws --profile=$profile cloudformation describe-stack-resourc
 
 alias awsr53-lz='aws --profile=$profile route53 list-hosted-zones --query="HostedZones" | jq'
 alias awsr53-ld='aws --profile=$profile route53domains list-domains --query="Domains" | jq'
+
+# CloudWatch Logs
+
+function awsCloudWatchLogsListFieldIndexes() {
+    # List CloudWatch Logs field indexes for the given log group ($1)
+    # Expects env: profile to be set
+
+    aws --profile=$profile logs describe-field-indexes --log-group-identifiers $1 --query="fieldIndexes" | jq 'map(. + {firstEventTime: (if .firstEventTime then (.firstEventTime/1000|todate) else .firstEventTime end), lastEventTime: (if .lastEventTime then (.lastEventTime/1000|todate) else .lastEventTime end), lastScanTime: (if .lastScanTime then (.lastScanTime/1000|todate) else .lastScanTime end)})'
+}
+
+alias awslogs-lfi='awsCloudWatchLogsListFieldIndexes'
+alias awslogs-llg='aws --profile=$profile logs describe-log-groups --query="logGroups" | jq "map(. + {firstEventTime: (if .firstEventTime then (.firstEventTime/1000|todate) else .firstEventTime end), lastEventTime: (if .lastEventTime then (.lastEventTime/1000|todate) else .lastEventTime end)})"'
