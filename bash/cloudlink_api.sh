@@ -163,6 +163,13 @@ function clList3rdPartyApplications() {
     clListApplications "?\$top=1000$1" | jq '._embedded.items | map(select(.resource//"" | contains("3pa")))'
 }
 
+function clCreate3rdPartyApplication() {
+    # Gets the application for provided appId ($1) and data ($2)
+    # Expects env: auth_token, cloud
+
+    clAuthDataOp POST "applications/$1" $2
+}
+
 function clUpdateApplication() {
     # Gets the application for provided appId ($1) and data ($2)
     # Expects env: auth_token, cloud
@@ -216,6 +223,7 @@ alias clapp-g="clGetApplication"
 alias clapp-u="clUpdateApplication"
 alias clapp-d="clDeleteApplication"
 alias cl3pa-l="clList3rdPartyApplications"
+alias cl3pa-c="clCreate3rdPartyApplication"
 
 alias clsso-sg="clAuthOp GET saml2/status?username="
 alias clidp-l="clListIdentityProviders"
