@@ -45,6 +45,7 @@ alias dt="jq 'del(.tags)'"
 alias dle="jq 'del(._links ,._embedded)'"
 alias dmeta="jq 'del(.createdOn ,.createdBy ,.modifiedOn ,.modifiedBy)'"
 alias min="dle | dmeta | dt"
+alias cli2a="jq -r '._embedded.items'"
 alias o2csv="jq -r '(.[0] | keys_unsorted) as \$keys | \$keys, (.[] | [.[]]) | @csv'"
 
 # Auth API
