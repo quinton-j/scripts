@@ -477,6 +477,13 @@ function clPatchUsers() {
     clAdminDataOp PATCH "accounts/$1/users" "$data" | jq '.operations//[] | map({statusCode,corrId:.headers."x-mitel-correlation-id",body:(.body | del(.sipPassword))})'
 }
 
+function clListUserAssociations() {
+    # Lists associations userId ($1) and optional query params ($3)
+    # Expects env: auth_token, cloud
+
+    clAdminOp GET "users/$1/associations$2" | jq 'del(.sipPassword)'
+}
+
 function clListClients() {
     # Lists the clients for the provided accountId ($1)
     # Expects env: auth_token, cloud
@@ -572,6 +579,7 @@ alias cluser-u="clPutUser"
 alias cluser-c="clPostUser"
 alias cluser-d="clDeleteUser"
 alias cluser-mu="clPatchUsers"
+alias clua-l="clListUserAssociations"
 
 alias clupass-u="clPutPassword"
 
