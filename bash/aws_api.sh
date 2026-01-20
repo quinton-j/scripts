@@ -244,5 +244,16 @@ function awsCloudWatchLogsListFieldIndexes() {
     aws --profile=$profile logs describe-field-indexes --log-group-identifiers $1 --query="fieldIndexes" | jq 'map(. + {firstEventTime: (if .firstEventTime then (.firstEventTime/1000|todate) else .firstEventTime end), lastEventTime: (if .lastEventTime then (.lastEventTime/1000|todate) else .lastEventTime end), lastScanTime: (if .lastScanTime then (.lastScanTime/1000|todate) else .lastScanTime end)})'
 }
 
+function awsCloudWatchLogsRenameQueryFolder() {
+    # Rename a CloudWatch Logs Insights query definition with id ($1) to new name ($2)
+    # Expects env: profile to be set
+    # Expects env: region to be set
+
+    aws --profile=$profile --region=$region logs put-query-definition --query-definition-id $1 --name "$2"
+}
+
 alias awslogs-lfi='awsCloudWatchLogsListFieldIndexes'
 alias awslogs-llg='aws --profile=$profile logs describe-log-groups --query="logGroups" | jq "map(. + {firstEventTime: (if .firstEventTime then (.firstEventTime/1000|todate) else .firstEventTime end), lastEventTime: (if .lastEventTime then (.lastEventTime/1000|todate) else .lastEventTime end)})"'
+alias awslogs-lqd='aws --profile=$profile --region=$region logs describe-query-definitions | jq ".queryDefinitions | map({qdi:.queryDefinitionId ,name ,qs:.queryString})"'
+alias awslogs-pqd='aws --profile=$profile --region=$region logs put-query-definition'
+alias awslogs-rqf='awsCloudWatchLogsRenameQueryFolder'
