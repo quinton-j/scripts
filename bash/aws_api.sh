@@ -244,12 +244,40 @@ function awsCloudWatchLogsListFieldIndexes() {
     aws --profile=$profile logs describe-field-indexes --log-group-identifiers $1 --query="fieldIndexes" | jq 'map(. + {firstEventTime: (if .firstEventTime then (.firstEventTime/1000|todate) else .firstEventTime end), lastEventTime: (if .lastEventTime then (.lastEventTime/1000|todate) else .lastEventTime end), lastScanTime: (if .lastScanTime then (.lastScanTime/1000|todate) else .lastScanTime end)})'
 }
 
-function awsCloudWatchLogsRenameQueryFolder() {
+function awsCloudWatchLogsRenameQueryDefinition() {
     # Rename a CloudWatch Logs Insights query definition with id ($1) to new name ($2)
     # Expects env: profile to be set
     # Expects env: region to be set
 
-    aws --profile=$profile --region=$region logs put-query-definition --query-definition-id $1 --name "$2"
+    local queryDefId="$1"
+    local newName="$2"
+
+    # Fetch the existing query definition
+    local queryDef=$(aws --profile=$profile --region=$region logs describe-query-definitions \
+        --query="queryDefinitions[?queryDefinitionId=='$queryDefId']|[0]" --output json)
+
+    if [ "$queryDef" == "null" ] || [ -z "$queryDef" ]; then
+        echo "Error: Query definition with ID '$queryDefId' not found"
+        return 1
+    fi
+
+    # Extract the query string and log group names
+    local queryString=$(echo "$queryDef" | jq -r '.queryString')
+    local logGroupNames=$(echo "$queryDef" | jq -r '.logGroupNames // [] | join(",")')
+
+    # Update with new name while preserving query string and log groups
+    if [ -n "$logGroupNames" ] && [ "$logGroupNames" != "" ]; then
+        aws --profile=$profile --region=$region logs put-query-definition \
+            --query-definition-id "$queryDefId" \
+            --name "$newName" \
+            --query-string "$queryString" \
+            --log-group-names $(echo $logGroupNames | tr ',' ' ')
+    else
+        aws --profile=$profile --region=$region logs put-query-definition \
+            --query-definition-id "$queryDefId" \
+            --name "$newName" \
+            --query-string "$queryString"
+    fi
 }
 
 function awsCloudWatchLogsCopyQueryDefinition() {
@@ -271,7 +299,7 @@ function awsCloudWatchLogsCopyQueryDefinition() {
         # Copy a specific query definition by name
         local queryDef=$(aws --profile=$profile --region=$sourceRegion logs describe-query-definitions \
             --query="queryDefinitions[?name=='$queryName']|[0]" --output json)
-        
+
         if [ "$queryDef" == "null" ] || [ -z "$queryDef" ]; then
             echo "Error: Query definition '$queryName' not found in region $sourceRegion"
             return 1
@@ -285,14 +313,14 @@ function awsCloudWatchLogsCopyQueryDefinition() {
         local existingQueryDef=$(aws --profile=$profile --region=$destRegion logs describe-query-definitions \
             --query="queryDefinitions[?name=='$queryName']|[0]" --output json)
         local existingQueryDefId=""
-        
+
         if [ "$existingQueryDef" != "null" ] && [ -n "$existingQueryDef" ]; then
             existingQueryDefId=$(echo $existingQueryDef | jq -r '.queryDefinitionId')
             echo "Updating existing query: $name (ID: $existingQueryDefId)"
         else
             echo "Creating new query: $name"
         fi
-        
+
         if [ -n "$logGroupNames" ] && [ "$logGroupNames" != "" ]; then
             if [ -n "$existingQueryDefId" ]; then
                 aws --profile=$profile --region=$destRegion logs put-query-definition \
@@ -322,9 +350,9 @@ function awsCloudWatchLogsCopyQueryDefinition() {
         # Copy all query definitions
         local queryDefs=$(aws --profile=$profile --region=$sourceRegion logs describe-query-definitions --output json)
         local count=$(echo $queryDefs | jq '.queryDefinitions | length')
-        
+
         echo "Copying $count query definitions from $sourceRegion to $destRegion..."
-        
+
         echo $queryDefs | jq -c '.queryDefinitions[]' | while read -r queryDef; do
             local name=$(echo $queryDef | jq -r '.name')
             local queryString=$(echo $queryDef | jq -r '.queryString')
@@ -334,14 +362,14 @@ function awsCloudWatchLogsCopyQueryDefinition() {
             local existingQueryDef=$(aws --profile=$profile --region=$destRegion logs describe-query-definitions \
                 --query="queryDefinitions[?name=='$name']|[0]" --output json)
             local existingQueryDefId=""
-            
+
             if [ "$existingQueryDef" != "null" ] && [ -n "$existingQueryDef" ]; then
                 existingQueryDefId=$(echo $existingQueryDef | jq -r '.queryDefinitionId')
                 echo "Updating: $name (ID: $existingQueryDefId)"
             else
                 echo "Creating: $name"
             fi
-            
+
             if [ -n "$logGroupNames" ] && [ "$logGroupNames" != "" ]; then
                 if [ -n "$existingQueryDefId" ]; then
                     aws --profile=$profile --region=$destRegion logs put-query-definition \
@@ -368,14 +396,80 @@ function awsCloudWatchLogsCopyQueryDefinition() {
                 fi
             fi
         done
-        
+
         echo "Done copying query definitions"
     fi
+}
+
+function awsCloudWatchLogsRenameQueryFolder() {
+    # Rename all CloudWatch Logs Insights query definitions in a folder
+    # Replaces old folder name ($1) with new folder name ($2) for all queries
+    # Expects env: profile to be set
+    # Expects env: region to be set
+
+    local oldFolder="$1"
+    local newFolder="$2"
+
+    if [ -z "$oldFolder" ] || [ -z "$newFolder" ]; then
+        echo "Error: Both old and new folder names must be specified"
+        echo "Usage: awsCloudWatchLogsRenameQueryFolder <old-folder> <new-folder>"
+        return 1
+    fi
+
+    # Get all query definitions that start with the old folder name
+    local queries=$(aws --profile=$profile --region=$region logs describe-query-definitions \
+        --output json | jq -c ".queryDefinitions[] | select(.name | startswith(\"$oldFolder\"))")
+
+    if [ -z "$queries" ]; then
+        echo "No query definitions found in folder: $oldFolder"
+        return 0
+    fi
+
+    local total=$(echo "$queries" | wc -l)
+    local success=0
+    local failed=0
+
+    while read -r query; do
+        local queryDefId=$(echo "$query" | jq -r '.queryDefinitionId')
+        local oldName=$(echo "$query" | jq -r '.name')
+        local queryString=$(echo "$query" | jq -r '.queryString')
+        local logGroupNames=$(echo "$query" | jq -r '.logGroupNames // [] | join(",")')
+        local newName=$(echo "$oldName" | sed "s|^$oldFolder|$newFolder|")
+
+        echo "Renaming: $oldName -> $newName"
+
+        local result
+        if [ -n "$logGroupNames" ] && [ "$logGroupNames" != "" ]; then
+            result=$(aws --profile=$profile --region=$region logs put-query-definition \
+                --query-definition-id "$queryDefId" \
+                --name "$newName" \
+                --query-string "$queryString" \
+                --log-group-names $(echo $logGroupNames | tr ',' ' ') 2>&1)
+        else
+            result=$(aws --profile=$profile --region=$region logs put-query-definition \
+                --query-definition-id "$queryDefId" \
+                --name "$newName" \
+                --query-string "$queryString" 2>&1)
+        fi
+
+        if echo "$result" | jq -e '.queryDefinitionId' >/dev/null 2>&1; then
+            ((success++))
+        else
+            ((failed++))
+            echo "Failed to rename: $oldName"
+            echo "$result"
+        fi
+    done <<< "$queries"
+
+    echo "Renamed $success of $total query definitions from $oldFolder to $newFolder"
+    [ $failed -gt 0 ] && echo "Failed: $failed" && return 1
+    return 0
 }
 
 alias awslogs-lfi='awsCloudWatchLogsListFieldIndexes'
 alias awslogs-llg='aws --profile=$profile logs describe-log-groups --query="logGroups" | jq "map(. + {firstEventTime: (if .firstEventTime then (.firstEventTime/1000|todate) else .firstEventTime end), lastEventTime: (if .lastEventTime then (.lastEventTime/1000|todate) else .lastEventTime end)})"'
 alias awslogs-lqd='aws --profile=$profile --region=$region logs describe-query-definitions | jq ".queryDefinitions | map({qdi:.queryDefinitionId ,name ,qs:.queryString})"'
 alias awslogs-pqd='aws --profile=$profile --region=$region logs put-query-definition'
+alias awslogs-rqd='awsCloudWatchLogsRenameQueryDefinition'
 alias awslogs-rqf='awsCloudWatchLogsRenameQueryFolder'
 alias awslogs-cqd='awsCloudWatchLogsCopyQueryDefinition'
