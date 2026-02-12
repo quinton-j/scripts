@@ -28,7 +28,7 @@ function clOp() {
     # Expects env: auth_token
 
     curl --silent --header 'Content-Type: application/json' --header "Authorization: Bearer $auth_token" \
-        --request $1 $2
+        --request "$1" "$2"
 }
 
 function clDataOp() {
@@ -36,16 +36,17 @@ function clDataOp() {
     # Expects env: auth_token
 
     curl --silent --header 'Content-Type: application/json' --header "Authorization: Bearer $auth_token" \
-        --request $1 $2 \
-        --data $3
+        --request "$1" "$2" \
+        --data "$3"
 }
 
 alias odfilter="oDataFilter"
-alias dt="jq 'del(.tags)'"
-alias dle="jq 'del(._links ,._embedded)'"
-alias dmeta="jq 'del(.createdOn ,.createdBy ,.modifiedOn ,.modifiedBy)'"
-alias min="dle | dmeta | dt"
-alias cli2a="jq -r '._embedded.items'"
+alias cldt="jq 'del(.tags)'"
+alias cldle="jq 'del(._links ,._embedded)'"
+alias cldmeta="jq 'del(.createdOn ,.createdBy ,.modifiedOn ,.modifiedBy)'"
+alias clmin="cldle | cldmeta | cldt"
+alias clamin="jq 'map(del(._links ,._embedded) | del(.createdOn ,.createdBy ,.modifiedOn ,.modifiedBy) | del(.tags))'"
+alias cli2a="jq '._embedded.items'"
 alias o2csv="jq -r '(.[0] | keys_unsorted) as \$keys | \$keys, (.[] | [.[]]) | @csv'"
 
 # Auth API
