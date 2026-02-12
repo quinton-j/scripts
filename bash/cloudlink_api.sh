@@ -45,7 +45,7 @@ alias cldt="jq 'del(.tags)'"
 alias cldle="jq 'del(._links ,._embedded)'"
 alias cldmeta="jq 'del(.createdOn ,.createdBy ,.modifiedOn ,.modifiedBy)'"
 alias clmin="cldle | cldmeta | cldt"
-alias clamin="jq 'map(del(._links ,._embedded) | del(.createdOn ,.createdBy ,.modifiedOn ,.modifiedBy) | del(.tags))'"
+alias clamin="jq 'map(del(._links ,._embedded) | del(.createdOn ,.createdBy ,.modifiedOn ,.modifiedBy) | del(.tags,.avatars))'"
 alias cli2a="jq '._embedded.items'"
 alias o2csv="jq -r '(.[0] | keys_unsorted) as \$keys | \$keys, (.[] | [.[]]) | @csv'"
 
