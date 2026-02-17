@@ -93,19 +93,19 @@ function clAuthLoginPassword() {
         echo
     fi
 
-    tmpDir=${LOCALAPPDATA:-$TMP}/${USER:-$USERNAME}-cli && mkdir --parents $tmpDir
+    tmpDir=${tmpDir:-${LOCALAPPDATA:-$TMP}/${USER:-$USERNAME}-cli} && mkdir --parents $tmpDir
     local tmpFile=$tmpDir/token.tmp
-    clAuthPostToken "password" "\"username\":\"$username\",\"password\":\"$password\",\"account_id\":\"$accountid\"" >$tmpFile
-    auth_token=$(jq --raw-output '.access_token' $tmpFile)
+    clAuthPostToken "password" "\"username\":\"$username\",\"password\":\"$password\",\"account_id\":\"$accountid\"" > "$tmpFile"
+    auth_token=$(jq --raw-output '.access_token' "$tmpFile")
 
-    if [ ! -f $clCredentialsFile ]; then
+    if [ ! -f "$clCredentialsFile" ]; then
         mkdir --parents ~/.cloudlink
-        echo '{}' >$clCredentialsFile
+        echo '{}' >"$clCredentialsFile"
     fi
 
-    jq --arg cloud "${cloud:1}" --argjson token "$(jq --raw-output '{access_token ,refresh_token}' $tmpFile)" \
-        '.[$cloud] = $token' $clCredentialsFile >$tmpFile
-    mv $tmpFile $clCredentialsFile
+    jq --arg cloud "${cloud:1}" --argjson token "$(jq --raw-output '{access_token ,refresh_token}' "$tmpFile")" \
+        '.[$cloud] = $token' "$clCredentialsFile" >"$tmpFile"
+    mv "$tmpFile" "$clCredentialsFile"
     clAuthOp GET token | jq '.'
 }
 
