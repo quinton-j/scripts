@@ -281,41 +281,64 @@ function awsCloudWatchLogsRenameQueryDefinition() {
 }
 
 function awsCloudWatchLogsCopyQueryDefinition() {
-    # Copy CloudWatch Insights Query Definitions from source region ($1) to destination region ($2)
+    # Copy CloudWatch Insights Query Definitions from source region ($1) to one or more destination regions
     # Expects env: profile to be set
-    # Optional: Provide query name as $3 to copy a specific query, otherwise copies all
+    # Usage:
+    #   awsCloudWatchLogsCopyQueryDefinition <source-region> <query-name> <dest-region> [dest-region...]
+    #   awsCloudWatchLogsCopyQueryDefinition <source-region> <query-name> <dest1,dest2,...>
 
-    local sourceRegion=$1
-    local destRegion=$2
-    local queryName=$3
+    local sourceRegion="$1"
+    local queryName="$2"
+    shift 2
 
-    if [ -z "$sourceRegion" ] || [ -z "$destRegion" ]; then
-        echo "Error: Both source and destination regions must be specified"
-        echo "Usage: awsCloudWatchLogsCopyQueryDefinition <source-region> <dest-region> [query-name]"
+    local destRegions=()
+
+    if [ -z "$sourceRegion" ] || [ -z "$queryName" ] || [ $# -lt 1 ]; then
+        echo "Error: Source region, query name, and destination region(s) must be specified"
+        echo "Usage: awsCloudWatchLogsCopyQueryDefinition <source-region> <query-name> <dest-region> [dest-region...]"
+        echo "   or: awsCloudWatchLogsCopyQueryDefinition <source-region> <query-name> <dest1,dest2,...>"
         return 1
     fi
 
-    if [ -n "$queryName" ]; then
-        # Copy a specific query definition by name
-        local queryDef=$(aws --profile=$profile --region=$sourceRegion logs describe-query-definitions \
-            --query="queryDefinitions[?name=='$queryName']|[0]" --output json)
+    while [ $# -gt 0 ]; do
+        local parsedDestRegions=()
+        IFS=',' read -r -a parsedDestRegions <<< "$1"
+        for parsedDestRegion in "${parsedDestRegions[@]}"; do
+            parsedDestRegion=$(echo "$parsedDestRegion" | xargs)
+            if [ -n "$parsedDestRegion" ]; then
+                destRegions+=("$parsedDestRegion")
+            fi
+        done
+        shift
+    done
 
-        if [ "$queryDef" == "null" ] || [ -z "$queryDef" ]; then
-            echo "Error: Query definition '$queryName' not found in region $sourceRegion"
-            return 1
-        fi
+    if [ ${#destRegions[@]} -eq 0 ]; then
+        echo "Error: At least one destination region must be specified"
+        return 1
+    fi
 
-        local name=$(echo $queryDef | jq -r '.name')
-        local queryString=$(echo $queryDef | jq -r '.queryString')
-        local logGroupNames=$(echo $queryDef | jq -r '.logGroupNames // [] | join(",")')
+    # Copy a specific query definition by name
+    local queryDef=$(aws --profile=$profile --region=$sourceRegion logs describe-query-definitions \
+        --query="queryDefinitions[?name=='$queryName']|[0]" --output json)
 
-        # Check if query already exists in destination region
+    if [ "$queryDef" == "null" ] || [ -z "$queryDef" ]; then
+        echo "Error: Query definition '$queryName' not found in region $sourceRegion"
+        return 1
+    fi
+
+    local name=$(echo "$queryDef" | jq -r '.name')
+    local queryString=$(echo "$queryDef" | jq -r '.queryString')
+    local logGroupNames=$(echo "$queryDef" | jq -r '.logGroupNames // [] | join(",")')
+
+    for destRegion in "${destRegions[@]}"; do
+        echo "Copying '$name' from $sourceRegion to $destRegion..."
+
         local existingQueryDef=$(aws --profile=$profile --region=$destRegion logs describe-query-definitions \
             --query="queryDefinitions[?name=='$queryName']|[0]" --output json)
         local existingQueryDefId=""
 
         if [ "$existingQueryDef" != "null" ] && [ -n "$existingQueryDef" ]; then
-            existingQueryDefId=$(echo $existingQueryDef | jq -r '.queryDefinitionId')
+            existingQueryDefId=$(echo "$existingQueryDef" | jq -r '.queryDefinitionId')
             echo "Updating existing query: $name (ID: $existingQueryDefId)"
         else
             echo "Creating new query: $name"
@@ -327,12 +350,12 @@ function awsCloudWatchLogsCopyQueryDefinition() {
                     --query-definition-id "$existingQueryDefId" \
                     --name "$name" \
                     --query-string "$queryString" \
-                    --log-group-names $(echo $logGroupNames | tr ',' ' ')
+                    --log-group-names $(echo "$logGroupNames" | tr ',' ' ')
             else
                 aws --profile=$profile --region=$destRegion logs put-query-definition \
                     --name "$name" \
                     --query-string "$queryString" \
-                    --log-group-names $(echo $logGroupNames | tr ',' ' ')
+                    --log-group-names $(echo "$logGroupNames" | tr ',' ' ')
             fi
         else
             if [ -n "$existingQueryDefId" ]; then
@@ -346,59 +369,7 @@ function awsCloudWatchLogsCopyQueryDefinition() {
                     --query-string "$queryString"
             fi
         fi
-    else
-        # Copy all query definitions
-        local queryDefs=$(aws --profile=$profile --region=$sourceRegion logs describe-query-definitions --output json)
-        local count=$(echo $queryDefs | jq '.queryDefinitions | length')
-
-        echo "Copying $count query definitions from $sourceRegion to $destRegion..."
-
-        echo $queryDefs | jq -c '.queryDefinitions[]' | while read -r queryDef; do
-            local name=$(echo $queryDef | jq -r '.name')
-            local queryString=$(echo $queryDef | jq -r '.queryString')
-            local logGroupNames=$(echo $queryDef | jq -r '.logGroupNames // [] | join(",")')
-
-            # Check if query already exists in destination region
-            local existingQueryDef=$(aws --profile=$profile --region=$destRegion logs describe-query-definitions \
-                --query="queryDefinitions[?name=='$name']|[0]" --output json)
-            local existingQueryDefId=""
-
-            if [ "$existingQueryDef" != "null" ] && [ -n "$existingQueryDef" ]; then
-                existingQueryDefId=$(echo $existingQueryDef | jq -r '.queryDefinitionId')
-                echo "Updating: $name (ID: $existingQueryDefId)"
-            else
-                echo "Creating: $name"
-            fi
-
-            if [ -n "$logGroupNames" ] && [ "$logGroupNames" != "" ]; then
-                if [ -n "$existingQueryDefId" ]; then
-                    aws --profile=$profile --region=$destRegion logs put-query-definition \
-                        --query-definition-id "$existingQueryDefId" \
-                        --name "$name" \
-                        --query-string "$queryString" \
-                        --log-group-names $(echo $logGroupNames | tr ',' ' ')
-                else
-                    aws --profile=$profile --region=$destRegion logs put-query-definition \
-                        --name "$name" \
-                        --query-string "$queryString" \
-                        --log-group-names $(echo $logGroupNames | tr ',' ' ')
-                fi
-            else
-                if [ -n "$existingQueryDefId" ]; then
-                    aws --profile=$profile --region=$destRegion logs put-query-definition \
-                        --query-definition-id "$existingQueryDefId" \
-                        --name "$name" \
-                        --query-string "$queryString"
-                else
-                    aws --profile=$profile --region=$destRegion logs put-query-definition \
-                        --name "$name" \
-                        --query-string "$queryString"
-                fi
-            fi
-        done
-
-        echo "Done copying query definitions"
-    fi
+    done
 }
 
 function awsCloudWatchLogsRenameQueryFolder() {
