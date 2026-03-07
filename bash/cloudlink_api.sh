@@ -792,17 +792,17 @@ alias clehis-l="clEventHistoryQuery"
 # Notifications API
 
 function clNotifyOp() {
-    # Executes a curl get request with the CL auth_token for the given method ($1) subresource ($2)
+    # Executes a curl get request with the CL auth_token for the given method ($1) subresource ($2) and optional query params ($3)
     # Expects env: auth_token, cloud
 
-    clOp $1 "https://notifications$cloud.api.mitel.io/2017-09-01/$2"
+    clOp $1 "https://notifications$cloud.api.mitel.io/2017-09-01/$2$3"
 }
 
 function clGetNotifySubscriptions() {
-    # Gets notification subscriptions
+    # Gets notification subscription with optional query params ($1)
     # Expects env: auth_token, cloud
 
-    clNotifyOp GET subscriptions
+    clNotifyOp GET subscriptions "$1"
 }
 
 function clDeleteNotifySubscription() {
@@ -994,3 +994,29 @@ function clPbxLinks() {
 }
 
 alias clplink-l="clPbxLinks"
+
+# CL WF API
+
+function clWorkflowOp() {
+    # Executes a curl request with the CL auth_token for the given method ($1) and workflow resource ($2)
+    # Expects env: auth_token, cloud
+
+    clOp $1 "https://workflow$cloud.api.mitel.io/2017-09-01/$2"
+}
+
+function clListActivities() {
+    # Lists activities with optional query params ($1)
+    # Expects env: auth_token, cloud
+
+    clWorkflowOp GET "activities$1"
+}
+
+function clGetActivity() {
+    # Gets activity for the provided activityId ($1)
+    # Expects env: auth_token, cloud
+
+    clWorkflowOp GET "activities/$1"
+}
+
+alias clact-l="clListActivities"
+alias clact-g="clGetActivity"
