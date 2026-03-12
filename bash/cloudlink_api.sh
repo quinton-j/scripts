@@ -17,7 +17,7 @@ function oDataFilter() {
 }
 
 function clHeadOp() {
-    # Executes a curl request with the CL auth_token for the given method ($1) and URL ($2)
+    # Executes a curl HEAD request with the CL auth_token for the given URL ($1)
     # Expects env: auth_token
 
     curl --head --header 'Content-Type: application/json' --header "Authorization: Bearer $auth_token" $1
@@ -110,7 +110,7 @@ function clAuthLoginPassword() {
 }
 
 function clListCredentials() {
-    # Lists the credentials account for the provided accountId ($1)
+    # Lists the credentials account for the provided accountId ($1) and optional query params ($2)
     # Expects env: auth_token, cloud
 
     clAuthOp GET "accounts/$1/credentials$2"
@@ -131,21 +131,21 @@ function clUpdateCredential() {
 }
 
 function clGetCredential() {
-    # Gets the credential for the provided credentialId ($2)
+    # Gets the credential for the provided credentialId ($1)
     # Expects env: auth_token, cloud
 
     clAuthOp GET "credentials/$1"
 }
 
 function clDeleteCredential() {
-    # Gets the credential for the provided credentialId ($2)
+    # Deletes the credential for the provided credentialId ($1)
     # Expects env: auth_token, cloud
 
     clAuthOp DELETE "credentials/$1"
 }
 
 function clListApplications() {
-    # Lists the applications
+    # Lists the applications with optional query params ($1)
     # Expects env: auth_token, cloud
 
     clAuthOp GET "apps$1"
@@ -159,7 +159,7 @@ function clGetApplication() {
 }
 
 function clList3rdPartyApplications() {
-    # Lists the applications
+    # Lists the 3rd party applications with optional query params ($1)
     # Expects env: auth_token, cloud
 
     clListApplications "?\$top=1000$1" | jq '._embedded.items | map(select(.resource//"" | contains("3pa")))'
@@ -316,7 +316,7 @@ function clListAccountsByPartnerId() {
 }
 
 function clListUsersByRole() {
-    # Lists the account for the provided accountId ($1)
+    # Lists users by role for the provided accountId ($1) and optional query params ($2)
     # Expects env: auth_token, cloud
 
     clAdminOp GET "accounts/$1/users$2" | jq '._embedded.items//[] | group_by(.role) | map({accountId:.[0].accountId,role:.[0].role,users:(. | del(.[].sipPassword)),count:length })'
@@ -330,7 +330,7 @@ function clGetPartner() {
 }
 
 function clListPartners() {
-    # Lists partners for the provided accountId ($1)
+    # Lists partners with optional query params ($1)
     # Expects env: auth_token, cloud
 
     clAdminOp GET "partners$1"
@@ -430,7 +430,7 @@ function clPutUser() {
 }
 
 function clPostUser() {
-    # Updates the user with accountId ($1), and body ($3)
+    # Creates a user with accountId ($1) and body ($2)
     # Expects env: auth_token, cloud
 
     clAdminDataOp POST "accounts/$1/users" $2 | jq 'del(.sipPassword)'
@@ -479,14 +479,14 @@ function clPatchUsers() {
 }
 
 function clListUserAssociations() {
-    # Lists associations userId ($1) and optional query params ($3)
+    # Lists associations for userId ($1) and optional query params ($2)
     # Expects env: auth_token, cloud
 
     clAdminOp GET "users/$1/associations$2" | jq 'del(.sipPassword)'
 }
 
 function clListClients() {
-    # Lists the clients for the provided accountId ($1)
+    # Lists the clients for the provided accountId ($1) and optional query params ($2)
     # Expects env: auth_token, cloud
 
     clAdminOp GET "accounts/$1/clients$2" | jq '._embedded.items//[]'
@@ -500,7 +500,7 @@ function clGetClient() {
 }
 
 function clListGroups() {
-    # Lists the clients for the provided accountId ($1)
+    # Lists the groups for the provided accountId ($1) and optional query params ($2)
     # Expects env: auth_token, cloud
 
     clAdminOp GET "accounts/$1/groups$2"
@@ -528,14 +528,14 @@ function clGetGroupMember() {
 }
 
 function clListSites() {
-    # Lists the sites for the provided accountId ($1)
+    # Lists the sites for the provided accountId ($1) and optional query params ($2)
     # Expects env: auth_token, cloud
 
     clAdminOp GET "accounts/$1/sites$2" | jq '._embedded.items//[] | map(del(._links))'
 }
 
 function clListAdminServices() {
-    # Lists the services for the provided accountId ($1)
+    # Lists the services for the provided accountId ($1) and optional query params ($2)
     # Expects env: auth_token, cloud
 
     clAdminOp GET "accounts/$1/services$2" \
@@ -609,7 +609,7 @@ function clDirectorOp() {
 }
 
 function clDirectorDataOp() {
-    # Executes a curl get request with the CL auth_token for the given method ($1) director subresource ($2)
+    # Executes a curl request with the CL auth_token for the given method ($1) director subresource ($2) and data ($3)
     # Expects env: auth_token, cloud
 
     clDataOp $1 "https://director$cloud.api.mitel.io/2018-07-01/$2" $3
@@ -637,7 +637,7 @@ function clDeleteService() {
 }
 
 function clUpsertService() {
-    # Deletes a registered service with the given host ($3), name ($2), and rank ($2)
+    # Upserts a registered service with the given name ($1), rank ($2), and host ($3)
     # Expects env: auth_token, cloud
 
     local encodedHost=$(echo $3 | jq --raw-input --raw-output '@uri')
@@ -724,14 +724,14 @@ function clGetChatAccountById() {
 }
 
 function clGetConversations() {
-    # Gets user conversations for the logged in user
+    # Gets user conversations for the logged in user with optional query params ($1)
     # Expects env: auth_token, cloud
 
     clChatOp GET "conversations$1"
 }
 
 function clPutAccountTag() {
-    # Updates the user with accountId ($1), tagId ($2), and tag value ($2)
+    # Updates the account tag with accountId ($1), tagId ($2), and tag value ($3)
     # Expects env: auth_token, cloud
 
     clAdminDataOp PUT "accounts/$1/tags/$2" $3
@@ -742,6 +742,13 @@ function clDeleteAccountTag() {
     # Expects env: auth_token, cloud
 
     clAdminOp DELETE "accounts/$1/tags/$2"
+}
+
+function clGetConversation() {
+    # Gets the conversation for the given conversationId ($1)
+    # Expects env: auth_token, cloud
+
+    clChatOp GET "conversations/$1"
 }
 
 function clListParticipants() {
@@ -766,6 +773,7 @@ function clPostMessageText() {
 }
 
 alias clconv-l='clChatOp GET conversations'
+alias clconv-g="clGetConversation"
 alias cluconv-l='clChatOp GET users/me/conversations'
 alias clcpart-l="clListParticipants"
 alias clcmsg-c="clPostMessageText"
