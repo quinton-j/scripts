@@ -49,6 +49,20 @@ alias clamin="jq 'map(del(._links ,._embedded) | del(.createdOn ,.createdBy ,.mo
 alias cli2a="jq '._embedded.items'"
 alias o2csv="jq -r '(.[0] | keys_unsorted) as \$keys | \$keys, (.[] | [.[]]) | @csv'"
 
+function csv2o {
+  jq --raw-input --null-input '
+    def unquote:
+      if startswith("\"") and endswith("\"") then
+        .[1:-1] | gsub("\"\""; "\"")
+      else
+        .
+      end;
+    [inputs | gsub("\r"; "") | split(",") | map(unquote)]
+    | (.[0]) as $headers
+    | [.[1:][] | select(length > 0) | [to_entries[] | select(($headers[.key] // "") | length > 0) | {($headers[.key]): .value}] | add]
+  '
+}
+
 # Auth API
 
 function clAuthOp() {
