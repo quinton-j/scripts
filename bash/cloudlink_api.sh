@@ -112,9 +112,10 @@ function clAuthLoginPassword() {
     clAuthPostToken "password" "\"username\":\"$username\",\"password\":\"$password\",\"account_id\":\"$accountid\"" > "$tmpFile"
     auth_token=$(jq --raw-output '.access_token' "$tmpFile")
 
-    if [ ! -f "$clCredentialsFile" ]; then
+    if [ ! -s "$clCredentialsFile" ] || ! jq empty "$clCredentialsFile" > /dev/null 2>&1; then
         mkdir --parents ~/.cloudlink
-        echo '{}' >"$clCredentialsFile"
+        echo "Creating new credentials file $clCredentialsFile" >&2
+        echo '{}' > "$clCredentialsFile"
     fi
 
     jq --arg cloud "${cloud:1}" --argjson token "$(jq --raw-output '{access_token ,refresh_token}' "$tmpFile")" \
