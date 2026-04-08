@@ -8,12 +8,12 @@ function oDataFilter() {
     # Constructs an OData filter chain for the given operator ($1), property ($2) and following values
 
     local f=""
-    for value in ${@:3}; do
+    for value in "${@:3}"; do
         f="$f%20$1%20$2%20eq%20%27$value%27"
     done
 
     f="${f/\%20or\%20/}"
-    echo $f
+    echo "$f"
 }
 
 function clHeadOp() {
@@ -76,7 +76,7 @@ function clAuthDataOp() {
     # Executes a curl request with the CL auth_token for the given method ($1) auth resource ($2) and data ($3)
     # Expects env: auth_token, cloud
 
-    clDataOp $1 "https://authentication$cloud.api.mitel.io/2017-09-01/$2" $3
+    clDataOp "$1" "https://authentication$cloud.api.mitel.io/2017-09-01/$2" "$3"
 }
 
 function clAuthPostToken() {
@@ -269,7 +269,7 @@ function clAdminDataOp() {
     # Executes a curl request with the CL auth_token for the given method ($1) admin resource ($2) and data ($3)
     # Expects env: auth_token, cloud
 
-    clDataOp $1 "https://admin$cloud.api.mitel.io/2017-09-01/$2" $3
+    clDataOp "$1" "https://admin$cloud.api.mitel.io/2017-09-01/$2" "$3"
 }
 
 function clListAccounts() {
@@ -376,7 +376,7 @@ function clPutPolicy() {
     # Gets policy with accountId ($1) and policyId ($2), and body ($3)
     # Expects env: auth_token, cloud
 
-    clAdminDataOp PUT "accounts/$1/policies/$2" $3
+    clAdminDataOp PUT "accounts/$1/policies/$2" "$3"
 }
 
 function clListPolicyStatements() {
@@ -397,7 +397,7 @@ function clPostPolicyStatements() {
     # Updates the user with accountId ($1), policyId ($2), and body ($3)
     # Expects env: auth_token, cloud
 
-    clAdminDataOp POST "accounts/$1/policies/$2/statements" $3
+    clAdminDataOp POST "accounts/$1/policies/$2/statements" "$3"
 }
 
 function clPostPolicyStatement() {
@@ -441,14 +441,14 @@ function clPutUser() {
     # Updates the user with accountId ($1), userId ($2), and body ($3)
     # Expects env: auth_token, cloud
 
-    clAdminDataOp PUT "accounts/$1/users/$2" $3 | jq 'del(.sipPassword)'
+    clAdminDataOp PUT "accounts/$1/users/$2" "$3" | jq 'del(.sipPassword)'
 }
 
 function clPostUser() {
     # Creates a user with accountId ($1) and body ($2)
     # Expects env: auth_token, cloud
 
-    clAdminDataOp POST "accounts/$1/users" $2 | jq 'del(.sipPassword)'
+    clAdminDataOp POST "accounts/$1/users" "$2" | jq 'del(.sipPassword)'
 }
 
 function clDeleteUser() {
@@ -627,7 +627,7 @@ function clDirectorDataOp() {
     # Executes a curl request with the CL auth_token for the given method ($1) director subresource ($2) and data ($3)
     # Expects env: auth_token, cloud
 
-    clDataOp $1 "https://director$cloud.api.mitel.io/2018-07-01/$2" $3
+    clDataOp "$1" "https://director$cloud.api.mitel.io/2018-07-01/$2" "$3"
 }
 
 function clListIdentities() {
@@ -721,7 +721,7 @@ function clChatDataOp() {
     # Executes a chat data request with the CL auth_token for the given method ($1) subpath  ($2) and data ($3)
     # Expects env: auth_token, cloud
 
-    clDataOp $1 "https://chat$cloud.api.mitel.io/2017-09-01/$2" $3
+    clDataOp "$1" "https://chat$cloud.api.mitel.io/2017-09-01/$2" "$3"
 }
 
 function clChatDataOp() {
@@ -749,7 +749,7 @@ function clPutAccountTag() {
     # Updates the account tag with accountId ($1), tagId ($2), and tag value ($3)
     # Expects env: auth_token, cloud
 
-    clAdminDataOp PUT "accounts/$1/tags/$2" $3
+    clAdminDataOp PUT "accounts/$1/tags/$2" "$3"
 }
 
 function clDeleteAccountTag() {
@@ -920,7 +920,7 @@ function clPresenceDataOp() {
     # Executes a curl request with the CL auth_token for the given method ($1) presence resource ($2) and data ($3)
     # Expects env: auth_token, cloud
 
-    clDataOp $1 "https://presence$cloud.api.mitel.io/2017-09-01/$2" $3
+    clDataOp "$1" "https://presence$cloud.api.mitel.io/2017-09-01/$2" "$3"
 }
 
 function clListPresentities() {
