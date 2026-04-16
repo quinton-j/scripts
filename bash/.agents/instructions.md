@@ -1,5 +1,9 @@
 # Instructions
 
+## CloudLink API Guidance
+
+- For tasks involving CloudLink API scripts in `/scripts/bash`, query the target service `_spec` route first (for example: `clAdminOp GET _spec`) and use that response as guidance for supported microservice capabilities, resource shapes, and request patterns before proposing or implementing changes.
+
 ## GitHub PR Guidance
 
 - Use clear, action-oriented PR titles.
