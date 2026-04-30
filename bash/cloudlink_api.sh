@@ -72,6 +72,13 @@ function clAuthOp() {
     clOp $1 "https://authentication$cloud.api.mitel.io/2017-09-01/$2$3"
 }
 
+function clGetAuthSpec() {
+    # Gets auth API specification
+    # Expects env: auth_token, cloud
+
+    clAuthOp GET "_spec"
+}
+
 function clAuthDataOp() {
     # Executes a curl request with the CL auth_token for the given method ($1) auth resource ($2) and data ($3)
     # Expects env: auth_token, cloud
@@ -228,6 +235,7 @@ alias cltok-g="clAuthOp GET token"
 alias cltok-lp="clAuthLoginPassword"
 alias cltok-clip="echo \$auth_token > /dev/clipboard"
 alias cltok-set='auth_token=$(jq --raw-output ".[\"${cloud:1}\"].access_token" $clCredentialsFile)'
+alias clauth-spec="clGetAuthSpec"
 
 alias clcred-l="clListCredentials"
 alias clcred-c="clCreateCredential"
@@ -263,6 +271,13 @@ function clAdminOp() {
     # Expects env: auth_token, cloud
 
     clOp $1 "https://admin$cloud.api.mitel.io/2017-09-01/$2"
+}
+
+function clGetAdminSpec() {
+    # Gets admin API specification
+    # Expects env: auth_token, cloud
+
+    clAdminOp GET "_spec"
 }
 
 function clAdminDataOp() {
@@ -576,6 +591,7 @@ alias clatag-u="clPutAccountTag"
 alias clatag-d="clDeleteAccountTag"
 
 alias clscim-h="clHeadScim"
+alias cladmin-spec="clGetAdminSpec"
 
 alias clpart-g="clGetPartner"
 alias clpart-l="clListPartners"
@@ -621,6 +637,13 @@ function clDirectorOp() {
     # Expects env: auth_token, cloud
 
     clOp $1 "https://director$cloud.api.mitel.io/2018-07-01/$2$3"
+}
+
+function clGetDirectorSpec() {
+    # Gets director API specification
+    # Expects env: auth_token, cloud
+
+    clDirectorOp GET "_spec"
 }
 
 function clDirectorDataOp() {
@@ -697,6 +720,7 @@ function clCreateEventRouter() {
 alias clid-l="clListIdentities"
 alias clid-g="clDirectorOp GET identities/"
 alias clid-d="clDirectorOp DELETE identities/"
+alias cldirector-spec="clGetDirectorSpec"
 
 alias clser-l="clListDirectorServices"
 alias clser-d="clDeleteService"
@@ -715,6 +739,13 @@ function clChatOp() {
     # Expects env: auth_token, cloud
 
     clOp $1 "https://chat$cloud.api.mitel.io/2017-09-01/$2$3"
+}
+
+function clGetChatSpec() {
+    # Gets chat API specification
+    # Expects env: auth_token, cloud
+
+    clChatOp GET "_spec"
 }
 
 function clChatDataOp() {
@@ -793,6 +824,7 @@ alias cluconv-l='clChatOp GET users/me/conversations'
 alias clcpart-l="clListParticipants"
 alias clcmsg-c="clPostMessageText"
 alias clcacc-g="clGetChatAccountById"
+alias clchat-spec="clGetChatSpec"
 
 # DataLake API
 
@@ -803,6 +835,13 @@ function clAnalyticsOp() {
     clOp $1 "https://analytics$cloud.api.mitel.io/2020-06-19/$2"
 }
 
+function clGetAnalyticsSpec() {
+    # Gets analytics API specification
+    # Expects env: auth_token, cloud
+
+    clAnalyticsOp GET "_spec"
+}
+
 function clEventHistoryQuery() {
     # Executes a queries the event history with the CL auth_token by source ($1), subject ($2), date exceeding ($3) and optional further filters ($4)
     # Expects env: auth_token, cloud
@@ -811,6 +850,7 @@ function clEventHistoryQuery() {
 }
 
 alias clehis-l="clEventHistoryQuery"
+alias clanalytics-spec="clGetAnalyticsSpec"
 
 # Notifications API
 
@@ -819,6 +859,13 @@ function clNotifyOp() {
     # Expects env: auth_token, cloud
 
     clOp $1 "https://notifications$cloud.api.mitel.io/2017-09-01/$2$3"
+}
+
+function clGetNotifySpec() {
+    # Gets notifications API specification
+    # Expects env: auth_token, cloud
+
+    clNotifyOp GET "_spec"
 }
 
 function clGetNotifySubscriptions() {
@@ -849,6 +896,7 @@ function clDeleteNotifySubscriptions() {
 alias clnsub-l="clGetNotifySubscriptions"
 alias clnsub-d="clDeleteNotifySubscription"
 alias clnsub-da="clDeleteNotifySubscriptions"
+alias clnotify-spec="clGetNotifySpec"
 
 # System manager API
 
@@ -857,6 +905,13 @@ function clSysManOp() {
     # Expects env: auth_token, cloud
 
     clOp $1 "https://system-manager$cloud.api.mitel.io/2023-07-01/$2"
+}
+
+function clGetSysManSpec() {
+    # Gets system manager API specification
+    # Expects env: auth_token, cloud
+
+    clSysManOp GET "_spec"
 }
 
 function clListComponents() {
@@ -891,6 +946,7 @@ alias clcomp-l='clListComponents'
 alias clplat-l='clListPlatforms'
 alias clplat-g='clGetPlatform'
 alias clplat-d='clDeletePlatform'
+alias clsysman-spec='clGetSysManSpec'
 
 # Billing API
 
@@ -901,11 +957,19 @@ function clBillingOp() {
     clOp $1 "https://billing$cloud.api.mitel.io/2019-03-01/$2"
 }
 
+function clGetBillingSpec() {
+    # Gets billing API specification
+    # Expects env: auth_token, cloud
+
+    clBillingOp GET "_spec"
+}
+
 alias clbill-ll="clBillingOp GET licenses"
 alias clbill-ls="clBillingOp GET subscriptions"
 alias clbill-lps="clBillingOp GET partner-subscriptions"
 alias clbill-lu="clBillingOp GET users"
 alias clbill-la="clBillingOp GET accounts"
+alias clbilling-spec="clGetBillingSpec"
 
 # Presence API
 
@@ -914,6 +978,13 @@ function clPresenceOp() {
     # Expects env: auth_token, cloud
 
     clOp $1 "https://presence$cloud.api.mitel.io/2017-09-01/$2"
+}
+
+function clGetPresenceSpec() {
+    # Gets presence API specification
+    # Expects env: auth_token, cloud
+
+    clPresenceOp GET "_spec"
 }
 
 function clPresenceDataOp() {
@@ -972,6 +1043,7 @@ alias clpres-g="clGetPresentity"
 alias clsource-p="clPatchSource"
 alias clsource-l="clListSources"
 alias clsource-g="clGetSource"
+alias clpresence-spec="clGetPresenceSpec"
 
 # Media API
 
@@ -980,6 +1052,13 @@ function clMediaOp() {
     # Expects env: auth_token, cloud
 
     clOp $1 "https://media$cloud.api.mitel.io/2017-09-01/$2"
+}
+
+function clGetMediaSpec() {
+    # Gets media API specification
+    # Expects env: auth_token, cloud
+
+    clMediaOp GET "_spec"
 }
 
 function clMediaOp() {
@@ -998,6 +1077,7 @@ function clGatewayLinks() {
 }
 
 alias clgwlink-l="clGatewayLinks"
+alias clmedia-spec="clGetMediaSpec"
 
 # Tunnel API
 
@@ -1006,6 +1086,13 @@ function clTunnelOp() {
     # Expects env: auth_token, cloud
 
     clOp $1 "https://tunnel$cloud.api.mitel.io/2017-09-01/$2"
+}
+
+function clGetTunnelSpec() {
+    # Gets tunnel API specification
+    # Expects env: auth_token, cloud
+
+    clTunnelOp GET "_spec"
 }
 
 function clPbxLinks() {
@@ -1017,6 +1104,7 @@ function clPbxLinks() {
 }
 
 alias clplink-l="clPbxLinks"
+alias cltunnel-spec="clGetTunnelSpec"
 
 # CL WF API
 
@@ -1025,6 +1113,13 @@ function clWorkflowOp() {
     # Expects env: auth_token, cloud
 
     clOp $1 "https://workflow$cloud.api.mitel.io/2017-09-01/$2"
+}
+
+function clGetWorkflowSpec() {
+    # Gets workflow API specification
+    # Expects env: auth_token, cloud
+
+    clWorkflowOp GET "_spec"
 }
 
 function clListActivities() {
@@ -1043,3 +1138,4 @@ function clGetActivity() {
 
 alias clact-l="clListActivities"
 alias clact-g="clGetActivity"
+alias clworkflow-spec="clGetWorkflowSpec"
