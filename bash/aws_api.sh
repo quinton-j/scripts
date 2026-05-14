@@ -165,7 +165,43 @@ function awsSesListSuppressedDestinations() {
     rm $tmpFile
 }
 
+function awsSesListAllSuppressedDestinations() {
+    # List all suppressed destinations for the given domain ($1) and optional other args
+    # Expects env: profile to be set
+
+    local domainFilter="$1"
+    shift
+
+    local page
+    local addresses="[]"
+    local token=""
+    local readCount=0
+    local totalCount=0
+
+    while true; do
+        if [ -n "$token" ]; then
+            page=$(awsSesListSuppressedDestinations "$domainFilter" --next-token "$token" "$@")
+        else
+            page=$(awsSesListSuppressedDestinations "$domainFilter" "$@")
+        fi
+
+        readCount=$(echo "$page" | jq '.suppressedAddresses // [] | length')
+        addresses=$(jq -n --argjson a "$addresses" --argjson b "$(echo "$page" | jq '.suppressedAddresses // []')" '$a + $b')
+        totalCount=$(echo "$addresses" | jq 'length')
+        echo "Read $readCount suppressed destination(s); total collected: $totalCount" >&2
+
+        token=$(echo "$page" | jq -r '.nextToken // empty')
+
+        if [ -z "$token" ]; then
+            break
+        fi
+    done
+
+    jq -n --argjson suppressedAddresses "$addresses" '{suppressedAddresses: ($suppressedAddresses | sort_by(.LastUpdateTime // "")), count: ($suppressedAddresses | length)}'
+}
+
 alias awsses-lsd='awsSesListSuppressedDestinations'
+alias awsses-lasd='awsSesListAllSuppressedDestinations'
 alias awsses-gsd='aws sesv2 get-suppressed-destination --profile=$profile --query="SuppressedDestination" --email-address'
 alias awsses-dsd='aws sesv2 delete-suppressed-destination --profile=$profile --email-address'
 
