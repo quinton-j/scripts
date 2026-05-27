@@ -33,6 +33,8 @@ function jiraSearch() {
     jiraDataOp "POST" "search" "{\"jql\": \"$1\", \"maxResults\": 1000}"
 }
 
+alias jira-me='jiraOp "GET" "myself"'
+
 # Issues
 
 function jiraGetIssue() {
@@ -84,6 +86,15 @@ function jiraAssignIssue() {
     jiraDataOp "PUT" "issue/$1/assignee" "{\"accountId\": \"$2\"}"
 }
 
+alias jira-gi='jiraGetIssue'
+alias jira-ci='jiraCreateIssue'
+alias jira-ui='jiraUpdateIssue'
+alias jira-ti='jiraTransitionIssue'
+alias jira-gt='jiraGetTransitions'
+alias jira-ac='jiraAddComment'
+alias jira-ai='jiraAssignIssue'
+alias jira-s='jiraSearch'
+
 # Sprints / Boards (Agile API)
 
 function jiraAgileOp() {
@@ -95,10 +106,17 @@ function jiraAgileOp() {
 }
 
 function jiraListBoards() {
-    # Lists all boards, optional extra params ($1) e.g. '&name=My%20Board&type=scrum'
+    # Lists all boards, optional extra params ($1) e.g. '&name=My%20Board&type=scrum&projectKeyOrId=CL'
     # Expects env: jira_url, jira_auth
 
     jiraAgileOp "GET" "board?maxResults=1000$1"
+}
+
+function jiraGetSprint() {
+    # Gets a sprint by id ($1)
+    # Expects env: jira_url, jira_auth
+
+    jiraAgileOp "GET" "sprint/$1"
 }
 
 function jiraListBoardSprints() {
@@ -115,17 +133,7 @@ function jiraListSprintIssues() {
     jiraAgileOp "GET" "sprint/$1/issue?maxResults=1000$2"
 }
 
-# Aliases
-
-alias jira-gi='jiraGetIssue'
-alias jira-ci='jiraCreateIssue'
-alias jira-ui='jiraUpdateIssue'
-alias jira-ti='jiraTransitionIssue'
-alias jira-gt='jiraGetTransitions'
-alias jira-ac='jiraAddComment'
-alias jira-ai='jiraAssignIssue'
-alias jira-s='jiraSearch'
 alias jira-lb='jiraListBoards'
+alias jira-gs='jiraGetSprint'
 alias jira-lbs='jiraListBoardSprints'
 alias jira-lsi='jiraListSprintIssues'
-alias jira-me='jiraOp "GET" "myself"'
