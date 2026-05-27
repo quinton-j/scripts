@@ -529,6 +529,21 @@ function clGetClient() {
     clAdminOp GET "accounts/$1/clients/$2"
 }
 
+function clPostClient() {
+    # Creates a client for the provided accountId ($1) with name ($2), role ($3), and optional type ($4)
+    # Expects env: auth_token, cloud
+
+    local type=${4:-APP}
+    clAdminDataOp POST "accounts/$1/clients" "{\"name\":\"$2\",\"role\":\"$3\",\"type\":\"$type\"}"
+}
+
+function clDeleteClient() {
+    # Deletes the client for the provided accountId ($1) and clientId ($2)
+    # Expects env: auth_token, cloud
+
+    clAdminOp DELETE "accounts/$1/clients/$2"
+}
+
 function clListGroups() {
     # Lists the groups for the provided accountId ($1) and optional query params ($2)
     # Expects env: auth_token, cloud
@@ -620,6 +635,8 @@ alias clutag-d="clDeleteUserTag"
 
 alias clclient-l="clListClients"
 alias clclient-g="clGetClient"
+alias clclient-c="clPostClient"
+alias clclient-d="clDeleteClient"
 
 alias clgroup-l="clListGroups"
 alias clgroup-g="clGetGroup"
