@@ -173,10 +173,11 @@ function awsSesListAllSuppressedDestinations() {
     shift
 
     local page
-    local addresses="[]"
     local token=""
     local readCount=0
     local totalCount=0
+    local tmpfile
+    tmpfile=$(mktemp)
 
     while true; do
         if [ -n "$token" ]; then
@@ -186,24 +187,29 @@ function awsSesListAllSuppressedDestinations() {
         fi
 
         readCount=$(echo "$page" | jq '.suppressedAddresses // [] | length')
-        addresses=$(jq -n --argjson a "$addresses" --argjson b "$(echo "$page" | jq '.suppressedAddresses // []')" '$a + $b')
-        totalCount=$(echo "$addresses" | jq 'length')
+        echo "$page" | jq --compact-output '.suppressedAddresses // [] | .[]' >> "$tmpfile"
+        totalCount=$((totalCount + readCount))
         echo "Read $readCount suppressed destination(s); total collected: $totalCount" >&2
 
-        token=$(echo "$page" | jq -r '.nextToken // empty')
+        token=$(echo "$page" | jq --raw-output '.nextToken // empty')
 
         if [ -z "$token" ]; then
             break
         fi
     done
 
-    jq -n --argjson suppressedAddresses "$addresses" '{suppressedAddresses: ($suppressedAddresses | sort_by(.LastUpdateTime // "")), count: ($suppressedAddresses | length)}'
+    jq --slurp '{suppressedAddresses: (sort_by(.LastUpdateTime // "")), count: length}' "$tmpfile"
+    rm -f "$tmpfile"
 }
 
 alias awsses-lsd='awsSesListSuppressedDestinations'
 alias awsses-lasd='awsSesListAllSuppressedDestinations'
 alias awsses-gsd='aws sesv2 get-suppressed-destination --profile=$profile --query="SuppressedDestination" --email-address'
+alias awsses-csd='aws sesv2 put-suppressed-destination --profile=$profile --reason=BOUNCE --email-address'
 alias awsses-dsd='aws sesv2 delete-suppressed-destination --profile=$profile --email-address'
+
+alias awsses-li='aws sesv2 list-email-identities --profile=$profile --region=$region --query="EmailIdentities[*].{identity:IdentityName,type:IdentityType,sendingEnabled:SendingEnabled,verificationStatus:VerificationStatus}"'
+alias awsses-gi='aws sesv2 get-email-identity --profile=$profile --region=$region --email-identity'
 
 # DynamoDB
 
@@ -298,8 +304,8 @@ function awsCloudWatchLogsRenameQueryDefinition() {
     fi
 
     # Extract the query string and log group names
-    local queryString=$(echo "$queryDef" | jq -r '.queryString')
-    local logGroupNames=$(echo "$queryDef" | jq -r '.logGroupNames // [] | join(",")')
+    local queryString=$(echo "$queryDef" | jq --raw-output '.queryString')
+    local logGroupNames=$(echo "$queryDef" | jq --raw-output '.logGroupNames // [] | join(",")')
 
     # Update with new name while preserving query string and log groups
     if [ -n "$logGroupNames" ] && [ "$logGroupNames" != "" ]; then
@@ -362,9 +368,9 @@ function awsCloudWatchLogsCopyQueryDefinition() {
         return 1
     fi
 
-    local name=$(echo "$queryDef" | jq -r '.name')
-    local queryString=$(echo "$queryDef" | jq -r '.queryString')
-    local logGroupNames=$(echo "$queryDef" | jq -r '.logGroupNames // [] | join(",")')
+    local name=$(echo "$queryDef" | jq --raw-output '.name')
+    local queryString=$(echo "$queryDef" | jq --raw-output '.queryString')
+    local logGroupNames=$(echo "$queryDef" | jq --raw-output '.logGroupNames // [] | join(",")')
 
     for destRegion in "${destRegions[@]}"; do
         echo "Copying '$name' from $sourceRegion to $destRegion..."
@@ -374,7 +380,7 @@ function awsCloudWatchLogsCopyQueryDefinition() {
         local existingQueryDefId=""
 
         if [ "$existingQueryDef" != "null" ] && [ -n "$existingQueryDef" ]; then
-            existingQueryDefId=$(echo "$existingQueryDef" | jq -r '.queryDefinitionId')
+            existingQueryDefId=$(echo "$existingQueryDef" | jq --raw-output '.queryDefinitionId')
             echo "Updating existing query: $name (ID: $existingQueryDefId)"
         else
             echo "Creating new query: $name"
@@ -425,7 +431,7 @@ function awsCloudWatchLogsRenameQueryFolder() {
 
     # Get all query definitions that start with the old folder name
     local queries=$(aws --profile=$profile --region=$region logs describe-query-definitions \
-        --output json | jq -c ".queryDefinitions[] | select(.name | startswith(\"$oldFolder\"))")
+        --output json | jq --compact-output ".queryDefinitions[] | select(.name | startswith(\"$oldFolder\"))")
 
     if [ -z "$queries" ]; then
         echo "No query definitions found in folder: $oldFolder"
@@ -437,10 +443,10 @@ function awsCloudWatchLogsRenameQueryFolder() {
     local failed=0
 
     while read -r query; do
-        local queryDefId=$(echo "$query" | jq -r '.queryDefinitionId')
-        local oldName=$(echo "$query" | jq -r '.name')
-        local queryString=$(echo "$query" | jq -r '.queryString')
-        local logGroupNames=$(echo "$query" | jq -r '.logGroupNames // [] | join(",")')
+        local queryDefId=$(echo "$query" | jq --raw-output '.queryDefinitionId')
+        local oldName=$(echo "$query" | jq --raw-output '.name')
+        local queryString=$(echo "$query" | jq --raw-output '.queryString')
+        local logGroupNames=$(echo "$query" | jq --raw-output '.logGroupNames // [] | join(",")')
         local newName=$(echo "$oldName" | sed "s|^$oldFolder|$newFolder|")
 
         echo "Renaming: $oldName -> $newName"
@@ -459,7 +465,7 @@ function awsCloudWatchLogsRenameQueryFolder() {
                 --query-string "$queryString" 2>&1)
         fi
 
-        if echo "$result" | jq -e '.queryDefinitionId' >/dev/null 2>&1; then
+        if echo "$result" | jq --exit-status '.queryDefinitionId' >/dev/null 2>&1; then
             ((success++))
         else
             ((failed++))
