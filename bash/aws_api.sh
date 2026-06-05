@@ -211,6 +211,8 @@ alias awsses-dsd='aws sesv2 delete-suppressed-destination --profile=$profile --e
 alias awsses-li='aws sesv2 list-email-identities --profile=$profile --region=$region --query="EmailIdentities[*].{identity:IdentityName,type:IdentityType,sendingEnabled:SendingEnabled,verificationStatus:VerificationStatus}"'
 alias awsses-gi='aws sesv2 get-email-identity --profile=$profile --region=$region --email-identity'
 
+alias awsses-gbr='aws cloudwatch get-metric-statistics --profile=$profile --region=$region --namespace AWS/SES --metric-name Reputation.BounceRate --start-time $(date -u -d "24 hours ago" "+%Y-%m-%dT%H:%M:%SZ") --end-time $(date -u "+%Y-%m-%dT%H:%M:%SZ") --period 86400 --statistics Average Minimum Maximum | jq '"'"'.Datapoints | sort_by(.Timestamp) | last | {Timestamp, Average: ((.Average * 10000 | round) / 100), Minimum: ((.Minimum * 10000 | round) / 100), Maximum: ((.Maximum * 10000 | round) / 100), Unit: "Percent"}'"'"''
+
 # DynamoDB
 
 alias awsddb-lt='aws --profile=$profile dynamodb list-tables --query="TableNames"'
