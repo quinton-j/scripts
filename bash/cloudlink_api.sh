@@ -734,10 +734,19 @@ function clCreateEventRouter() {
     clDirectorDataOp POST "event-routers" "{\"accountId\":\"$1\",\"eventType\":\"$2\",\"destination\":\"$3\"}"
 }
 
+function clGetDiscovery() {
+    # Gets director discovery for the domain ($1)
+    # Expects env: auth_token, cloud
+
+    clOp GET "https://director$cloud.api.mitel.io/discovery/$domain"
+}
+
+alias cldir-spec="clGetDirectorSpec"
+alias cldir-disc="clGetDiscovery"
+
 alias clid-l="clListIdentities"
 alias clid-g="clDirectorOp GET identities/"
 alias clid-d="clDirectorOp DELETE identities/"
-alias cldirector-spec="clGetDirectorSpec"
 
 alias clser-l="clListDirectorServices"
 alias clser-d="clDeleteService"

@@ -270,6 +270,7 @@ alias awscform-ls='aws --profile=$profile cloudformation list-stacks --query "St
 alias awscform-gs='aws --profile=$profile cloudformation describe-stacks --stack-name=$stackName | jq'
 alias awscform-lsr='aws --profile=$profile cloudformation list-stack-resources --stack-name=$stackName --query "StackResourceSummaries" | jq'
 alias awscform-lse='aws --profile=$profile cloudformation describe-stack-events --stack-name=$stackName --query="StackEvents" | jq'
+alias awscform-lsc='aws --profile=$profile cloudformation list-change-sets --stack-name=$stackName --query="Summaries" | jq'
 
 alias awscform-dsd='aws --profile=$profile cloudformation detect-stack-drift --stack-name=$stackName | jq'
 alias awscform-lsd='aws --profile=$profile cloudformation describe-stack-resource-drifts --query=""StackResourceDrifts --stack-name=$stackName | jq'
