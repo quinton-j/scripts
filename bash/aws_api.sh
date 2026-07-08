@@ -275,6 +275,13 @@ alias awscform-lsc='aws --profile=$profile cloudformation list-change-sets --sta
 alias awscform-dsd='aws --profile=$profile cloudformation detect-stack-drift --stack-name=$stackName | jq'
 alias awscform-lsd='aws --profile=$profile cloudformation describe-stack-resource-drifts --query=""StackResourceDrifts --stack-name=$stackName | jq'
 
+# CloudFront
+
+alias awscfront-ld='aws --profile=$profile cloudfront list-distributions --query="DistributionList.Items[*].{id:Id,domain:DomainName,status:Status,enabled:Enabled,comment:Comment}" | jq'
+alias awscfront-gd='aws --profile=$profile cloudfront get-distribution --query="Distribution" --id'
+alias awscfront-gdc='aws --profile=$profile cloudfront get-distribution-config --query="DistributionConfig" --id'
+alias awscfront-li='aws --profile=$profile cloudfront list-invalidations --query="InvalidationList.Items" --distribution-id'
+
 # Route53
 
 alias awsr53-lz='aws --profile=$profile route53 list-hosted-zones --query="HostedZones" | jq'
