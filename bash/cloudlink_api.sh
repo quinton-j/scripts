@@ -1049,6 +1049,13 @@ function clGetSource() {
     clPresenceOp GET "presentities/$1/categories/$2/$3"
 }
 
+function clListAggregateFilters() {
+    # Lists the aggregate filters with optional query params ($1)
+    # Expects env: auth_token, cloud
+
+    clPresenceOp GET "aggregate-filters$1"
+}
+
 function clPatchSource() {
     # Run the PATCH presenties operation for the given accountId ($1), principalId ($2), sourceType ($3), sourceId ($4), status ($5), reason ($6), and extended ($7)
     # Expects env: auth_token, cloud
@@ -1069,7 +1076,8 @@ alias clpres-g="clGetPresentity"
 alias clsource-p="clPatchSource"
 alias clsource-l="clListSources"
 alias clsource-g="clGetSource"
-alias clpresence-spec="clGetPresenceSpec"
+alias claggfil-l="clListAggregateFilters"
+alias clpres-spec="clGetPresenceSpec"
 
 # Media API
 
