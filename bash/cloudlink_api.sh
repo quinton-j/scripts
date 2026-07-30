@@ -202,10 +202,10 @@ function clUpdateApplication() {
 }
 
 function clDeleteApplication() {
-    # Deletes the application for provided appId ($1)
+    # Deletes the application for provided appId ($1) and optional accountId ($2)
     # Expects env: auth_token, cloud
 
-    clAuthOp DELETE "applications/$1"
+    clAuthDataOp DELETE "applications/$1" "{\"accountId\":\"$2\"}"
 }
 
 function clListIdentityProviders() {
