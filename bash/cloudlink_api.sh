@@ -305,7 +305,7 @@ function clListAccountsContainingName() {
         filter+="substringof(name,'$name')%20or%20"
     done
 
-    clAdminOp GET "accounts?\$filter=${filter::-8}"
+    clAdminOp GET "accounts?\$top=10000&\$filter=${filter::-8}"
 }
 
 function clGetAccount() {
