@@ -240,7 +240,7 @@ alias awsssm-gp='aws --profile=$profile ssm get-parameter --with-decryption --na
 alias awsssm-dp='aws --profile=$profile ssm delete-parameter --name'
 alias awsssm-up='aws --profile=$profile ssm put-parameter --overwrite --type=String'
 
-# Codepipeline
+# CodePipeline
 
 alias awscp-lp='aws --profile=$profile codepipeline list-pipelines --query="pipelines"'
 alias awscp-lpe='aws --profile=$profile codepipeline list-pipeline-executions --query="pipelineExecutionSummaries" --pipeline-name'

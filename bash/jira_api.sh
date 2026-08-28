@@ -26,11 +26,79 @@ function jiraDataOp() {
         --data "$3"
 }
 
-function jiraSearch() {
-    # Searches for issues using the given JQL query ($1)
+function jiraSearchOp() {
+    # Executes a curl request against the search API for the given path ($1) and data ($2)
+    # Search lives on v3 only, Atlassian removed /rest/api/2/search, so this cannot use jiraDataOp
     # Expects env: jira_url, jira_auth
 
-    jiraDataOp "POST" "search" "{\"jql\": \"$1\", \"maxResults\": 1000}"
+    curl --silent --show-error --header 'Content-Type: application/json' --header "Authorization: Basic $jira_auth" \
+        --request "POST" "$jira_url/rest/api/3/search/$1" \
+        --data "$2"
+}
+
+function jiraSearch() {
+    # Searches for issues using the given JQL query ($1), optional comma separated field names
+    # ($2, default '*navigable') and optional next page token ($3)
+    # Returns one page. The API caps a page at 100 issues once fields are named, and it caps
+    # silently, so use jiraSearchAll for a query that can match more
+    # Expects env: jira_url, jira_auth
+
+    local jql="$1"
+    local fields="${2:-*navigable}"
+    local token="$3"
+
+    jiraSearchOp "jql" "$(jq --null-input --compact-output \
+        --arg jql "$jql" --arg fields "$fields" --arg token "$token" \
+        '{jql: $jql, maxResults: 100, fields: ($fields | split(","))}
+            + (if $token == "" then {} else {nextPageToken: $token} end)')"
+}
+
+function jiraSearchAll() {
+    # Searches for issues using the given JQL query ($1) and optional comma separated field
+    # names ($2), following the page tokens to collect every match
+    # Expects env: jira_url, jira_auth
+
+    local jql="$1"
+    local fields="$2"
+
+    local page
+    local token=""
+    local readCount=0
+    local totalCount=0
+    local tmpfile
+    tmpfile=$(mktemp)
+
+    while true; do
+        page=$(jiraSearch "$jql" "$fields" "$token")
+
+        if [ "$(echo "$page" | jq --raw-output 'has("issues")')" != "true" ]; then
+            rm -f "$tmpfile"
+            echo "$page"
+            return 1
+        fi
+
+        readCount=$(echo "$page" | jq '.issues | length')
+        echo "$page" | jq --compact-output '.issues[]' >> "$tmpfile"
+        totalCount=$((totalCount + readCount))
+        echo "Read $readCount issue(s); total collected: $totalCount" >&2
+
+        token=$(echo "$page" | jq --raw-output '.nextPageToken // empty')
+
+        if [ -z "$token" ]; then
+            break
+        fi
+    done
+
+    jq --slurp '{issues: ., total: length}' "$tmpfile"
+    rm -f "$tmpfile"
+}
+
+function jiraSearchCount() {
+    # Gets the approximate count of issues matching the given JQL query ($1)
+    # The search response no longer carries a total, so a count takes its own call
+    # Expects env: jira_url, jira_auth
+
+    jiraSearchOp "approximate-count" "$(jq --null-input --compact-output --arg jql "$1" '{jql: $jql}')"
 }
 
 alias jira-me='jiraOp "GET" "myself"'
@@ -94,6 +162,8 @@ alias jira-gt='jiraGetTransitions'
 alias jira-ac='jiraAddComment'
 alias jira-ai='jiraAssignIssue'
 alias jira-s='jiraSearch'
+alias jira-sa='jiraSearchAll'
+alias jira-sc='jiraSearchCount'
 
 # Sprints / Boards (Agile API)
 

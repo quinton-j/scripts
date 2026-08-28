@@ -295,17 +295,26 @@ function clListAccounts() {
 }
 
 function clListAccountsContainingName() {
-    # List accounts with name variants and optional query params ($1)
+    # Lists accounts whose name contains the provided name ($1), with optional query params ($2)
     # Expects env: auth_token, cloud
 
-    local casedNames=($1 ${1,,} ${1^^} ${1^})
+    if [[ -z $1 ]]; then
+        echo "clListAccountsContainingName: a name is required" >&2
+        return 1
+    fi
 
-    local filter=''
-    for name in ${casedNames[*]}; do
-        filter+="substringof(name,'$name')%20or%20"
+    local casedNames=("$1" "${1,,}" "${1^^}" "${1^}")
+    local uniqueNames
+    mapfile -t uniqueNames < <(printf '%s\n' "${casedNames[@]}" | sort --unique)
+
+    local filter='' name encoded
+    for name in "${uniqueNames[@]}"; do
+        # Double a literal quote for OData, then percent-encode the whole value
+        encoded=$(printf '%s' "${name//\'/\'\'}" | jq --slurp --raw-input --raw-output @uri)
+        filter+="substringof(name,%27${encoded}%27)%20or%20"
     done
 
-    clAdminOp GET "accounts?\$top=10000&\$filter=${filter::-8}"
+    clListAccounts "&\$top=10000&\$filter=${filter%\%20or\%20}$2"
 }
 
 function clGetAccount() {
@@ -341,8 +350,8 @@ function clListAccountsByPartnerId() {
     # Lists the accounts for the provided partnerId ($1) and optional query params ($2)
     # Expects env: auth_token, cloud
 
-    clAdminOp GET "accounts?\$top=10000&\$expand=tags&\$filter=partnerId%20eq%20'$1'" |
-        jq '._embedded.items | map({name,accountId,accountNumber,partnerId,active,organizationId,sapId:.tags.mitel_connect_refs.sap_references_primary_1,createdOn,createdBy})'
+    clAdminOp GET "accounts?\$top=10000&\$expand=tags&\$filter=partnerId%20eq%20%27$1%27$2" |
+        jq '._embedded.items // [] | map({name,accountId,accountNumber,partnerId,active,organizationId,sapId:.tags.mitel_connect_refs.sap_references_primary_1,createdOn,createdBy})'
 }
 
 function clListUsersByRole() {
