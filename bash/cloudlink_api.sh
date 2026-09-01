@@ -222,6 +222,59 @@ function clGetIdentityProvider() {
     clAuthOp GET "identityProviders/$1"
 }
 
+function clListTrustedIssuers() {
+    # Lists the trusted issuers for the account of the token, with optional query params ($1)
+    # Includes the global issuers of account '*'
+    # Expects env: auth_token, cloud
+
+    clAuthOp GET "trusted-issuers$1"
+}
+
+function clListAccountTrustedIssuers() {
+    # Lists the trusted issuers for the provided accountId ($1), with optional query params ($2)
+    # Expects env: auth_token, cloud
+
+    local accountId=${1:-'*'}
+    clAuthOp GET "accounts/$accountId/trusted-issuers$2"
+}
+
+function clGetTrustedIssuer() {
+    # Gets the trusted issuer for the provided issuerId ($1)
+    # Expects env: auth_token, cloud
+
+    clAuthOp GET "trusted-issuers/$1"
+}
+
+function clCreateTrustedIssuer() {
+    # Creates a trusted issuer with iss ($1), jwksUri ($2), and optional displayName ($3), description ($4) and accountId ($5)
+    # An accountId can only be provided by a microservice
+    # Expects env: auth_token, cloud
+
+    local body=$(jq --null-input --compact-output \
+        --arg iss "$1" \
+        --arg jwksUri "$2" \
+        --arg displayName "$3" \
+        --arg description "$4" \
+        --arg accountId "$5" \
+        '{$iss ,$jwksUri ,$displayName ,$description ,$accountId} | with_entries(select(.value != ""))')
+
+    clAuthDataOp POST "trusted-issuers" "$body"
+}
+
+function clUpdateTrustedIssuer() {
+    # Updates the trusted issuer for the provided issuerId ($1) with body ($2)
+    # Expects env: auth_token, cloud
+
+    clAuthDataOp PUT "trusted-issuers/$1" "$2"
+}
+
+function clDeleteTrustedIssuer() {
+    # Deletes the trusted issuer for the provided issuerId ($1)
+    # Expects env: auth_token, cloud
+
+    clAuthOp DELETE "trusted-issuers/$1"
+}
+
 function clGetWellKnownJwks() {
     # Gets the identity providers for the account id ($1)
     # Expects env: auth_token, cloud
@@ -254,6 +307,13 @@ alias clsso-sg="clAuthOp GET saml2/status?username="
 alias clidp-l="clListIdentityProviders"
 alias clidp-g="clGetIdentityProvider"
 alias clscim-h="clCheckScim"
+
+alias clti-l="clListTrustedIssuers"
+alias clti-la="clListAccountTrustedIssuers"
+alias clti-g="clGetTrustedIssuer"
+alias clti-c="clCreateTrustedIssuer"
+alias clti-u="clUpdateTrustedIssuer"
+alias clti-d="clDeleteTrustedIssuer"
 
 alias cljwks-g="clGetWellKnownJwks"
 
