@@ -382,6 +382,14 @@ function clPutPartner() {
     clAdminDataOp PUT "partners/$1" $2
 }
 
+function clDeletePartner() {
+    # Deletes the partner for the provided partnerId ($1)
+    # Cascades to the partner's accounts
+    # Expects env: auth_token, cloud
+
+    clAdminOp DELETE "partners/$1?hard=true"
+}
+
 function clListPolicies() {
     # Lists policies in accountId ($1), and optional query params ($2)
     # Expects env: auth_token, cloud
@@ -538,6 +546,13 @@ function clGetClient() {
     clAdminOp GET "accounts/$1/clients/$2"
 }
 
+function clPutClient() {
+    # Updates the client for the provided accountId ($1) and clientId ($2) with body ($3)
+    # Expects env: auth_token, cloud
+
+    clAdminDataOp PUT "accounts/$1/clients/$2" "$3"
+}
+
 function clPostClient() {
     # Creates a client for the provided accountId ($1) with name ($2), role ($3), and optional type ($4)
     # Expects env: auth_token, cloud
@@ -551,6 +566,13 @@ function clDeleteClient() {
     # Expects env: auth_token, cloud
 
     clAdminOp DELETE "accounts/$1/clients/$2"
+}
+
+function clListContacts() {
+    # Lists the contacts for the provided accountId ($1) with optional query params ($2)
+    # Expects env: auth_token, cloud
+
+    clAdminOp GET "accounts/$1/contacts$2"
 }
 
 function clListGroups() {
@@ -620,6 +642,7 @@ alias cladmin-spec="clGetAdminSpec"
 alias clpart-g="clGetPartner"
 alias clpart-l="clListPartners"
 alias clpart-u="clPutPartner"
+alias clpart-d="clDeletePartner"
 
 alias clpol-l="clListPolicies"
 alias clpol-g="clGetPolicy"
@@ -644,8 +667,11 @@ alias clutag-d="clDeleteUserTag"
 
 alias clclient-l="clListClients"
 alias clclient-g="clGetClient"
+alias clclient-u="clPutClient"
 alias clclient-c="clPostClient"
 alias clclient-d="clDeleteClient"
+
+alias clcontact-l="clListContacts"
 
 alias clgroup-l="clListGroups"
 alias clgroup-g="clGetGroup"
@@ -790,18 +816,18 @@ function clChatDataOp() {
     clDataOp "$1" "https://chat$cloud.api.mitel.io/2017-09-01/$2" "$3"
 }
 
-function clChatDataOp() {
-    # Executes a curl POST request with the CL auth_token for the given admin resource ($1) and data ($2)
-    # Expects env: auth_token, cloud
-
-    clChatDataOp POST $1 $2
-}
-
 function clGetChatAccountById() {
     # Gets chat cached account record for the given accountId ($1)
     # Expects env: auth_token, cloud
 
     clChatOp GET "accounts/$1"
+}
+
+function clPostAccountTranscript() {
+    # Starts an account transcript for the provided accountId ($1) with optional contentType ($2, defaults to text/csv)
+    # Expects env: auth_token, cloud
+
+    clChatDataOp POST "accounts/$1/transcripts" "{\"contentType\":\"${2:-text/csv}\"}"
 }
 
 function clGetConversations() {
@@ -859,6 +885,7 @@ alias cluconv-l='clChatOp GET users/me/conversations'
 alias clcpart-l="clListParticipants"
 alias clcmsg-c="clPostMessageText"
 alias clcacc-g="clGetChatAccountById"
+alias clcacctrans-c="clPostAccountTranscript"
 alias clchat-spec="clGetChatSpec"
 
 # DataLake API
