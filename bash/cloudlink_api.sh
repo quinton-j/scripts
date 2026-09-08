@@ -286,7 +286,7 @@ function clGetWellKnownJwks() {
 export clCredentialsFile=~/.cloudlink/credentials
 alias cltok-g="clAuthOp GET token"
 alias cltok-lp="clAuthLoginPassword"
-alias cltok-clip="echo \$auth_token > /dev/clipboard"
+alias cltok-clip='printf %s "$auth_token" | xclip -selection clipboard'
 alias cltok-set='auth_token=$(jq --raw-output ".[\"${cloud:1}\"].access_token" $clCredentialsFile)'
 alias clauth-spec="clGetAuthSpec"
 
