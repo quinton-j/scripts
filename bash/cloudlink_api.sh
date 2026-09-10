@@ -47,7 +47,7 @@ alias cldmeta="jq 'del(.createdOn ,.createdBy ,.modifiedOn ,.modifiedBy)'"
 alias clmin="cldle | cldmeta | cldt"
 alias clamin="jq 'map(del(._links ,._embedded) | del(.createdOn ,.createdBy ,.modifiedOn ,.modifiedBy) | del(.tags,.avatars))'"
 alias cli2a="jq '._embedded.items'"
-alias o2csv="jq -r '(.[0] | keys_unsorted) as \$keys | \$keys, (.[] | [.[]]) | @csv'"
+alias o2csv="jq --raw-output '(.[0] | keys_unsorted) as \$keys | \$keys, (.[] | [.[]]) | @csv'"
 
 function csv2o {
   jq --raw-input --null-input '

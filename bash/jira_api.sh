@@ -72,7 +72,7 @@ function jiraSearchAll() {
         page=$(jiraSearch "$jql" "$fields" "$token")
 
         if [ "$(echo "$page" | jq --raw-output 'has("issues")')" != "true" ]; then
-            rm -f "$tmpfile"
+            rm --force "$tmpfile"
             echo "$page"
             return 1
         fi
@@ -90,7 +90,7 @@ function jiraSearchAll() {
     done
 
     jq --slurp '{issues: ., total: length}' "$tmpfile"
-    rm -f "$tmpfile"
+    rm --force "$tmpfile"
 }
 
 function jiraSearchCount() {

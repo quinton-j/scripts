@@ -14,7 +14,7 @@ function npm_run_complete() {
     local scripts
 
     if [ -f "package.json" ]; then
-        scripts=$(jq -r '.scripts | keys[]' package.json 2>/dev/null)
+        scripts=$(jq --raw-output '.scripts | keys[]' package.json 2>/dev/null)
         COMPREPLY=($(compgen -W "${scripts}" -- "${cur}"))
     fi
 }

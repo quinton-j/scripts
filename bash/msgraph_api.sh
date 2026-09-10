@@ -11,7 +11,7 @@ function msgraphSetCredentials() {
     # Stores credentials to ~/.msgraph/config.json
     # Arguments: ($1) tenantId ($2) clientId ($3) clientSecret
 
-    mkdir -p ~/.msgraph
+    mkdir --parents ~/.msgraph
     local msCredentialsFile="~/.msgraph/config.json"
     if [ ! -s "$msCredentialsFile" ] || ! jq empty "$msCredentialsFile" > /dev/null 2>&1; then
         mkdir --parents ~/.msgraph
@@ -57,9 +57,9 @@ function msgraphGetTokenDeviceFlow() {
         --data "client_id=$client_id" \
         --data "scope=https://graph.microsoft.com/.default")
 
-    local device_code=$(echo "$device_response" | jq -r '.device_code')
-    local user_code=$(echo "$device_response" | jq -r '.user_code')
-    local verification_uri=$(echo "$device_response" | jq -r '.verification_uri')
+    local device_code=$(echo "$device_response" | jq --raw-output '.device_code')
+    local user_code=$(echo "$device_response" | jq --raw-output '.user_code')
+    local verification_uri=$(echo "$device_response" | jq --raw-output '.verification_uri')
 
     echo "Visit: $verification_uri"
     echo "Code: $user_code"
@@ -79,18 +79,18 @@ function msgraphSaveTokenResponse() {
     # Saves token response (with access_token, refresh_token, expires_in) to ~/.msgraph/config.json
     # Expects argument ($1) to be the full token response JSON
 
-    mkdir -p ~/.msgraph
+    mkdir --parents ~/.msgraph
     local now=$(date +%s)
-    local expires_in=$(echo "$1" | jq -r '.expires_in // 3600' | grep -o '^[0-9]*')
+    local expires_in=$(echo "$1" | jq --raw-output '.expires_in // 3600' | grep --only-matching '^[0-9]*')
     local expires_at=$((now + expires_in))
 
-    jq --arg access_token "$(echo "$1" | jq -r '.access_token')" \
-        --arg refresh_token "$(echo "$1" | jq -r '.refresh_token // empty')" \
+    jq --arg access_token "$(echo "$1" | jq --raw-output '.access_token')" \
+        --arg refresh_token "$(echo "$1" | jq --raw-output '.refresh_token // empty')" \
         --arg expires_at "$expires_at" \
         '.accessToken = $access_token | .refreshToken = $refresh_token | .expiresAt = $expires_at' \
         ~/.msgraph/config.json > ~/.msgraph/config.json.tmp && \
         mv ~/.msgraph/config.json.tmp ~/.msgraph/config.json
-    msgraph_token=$(echo "$1" | jq -r '.access_token')
+    msgraph_token=$(echo "$1" | jq --raw-output '.access_token')
     echo "$1" | jq 'del(.access_token, .refresh_token, .id_token)'
 }
 
@@ -124,7 +124,7 @@ function msgraphSaveToken() {
     # Saves a token to ~/.msgraph/config.json
     # Expects argument ($1) to be the token
 
-    mkdir -p ~/.msgraph
+    mkdir --parents ~/.msgraph
     jq --arg token "$1" '.accessToken = $token' ~/.msgraph/config.json > ~/.msgraph/config.json.tmp && mv ~/.msgraph/config.json.tmp ~/.msgraph/config.json
     msgraph_token="$1"
 }
