@@ -16,6 +16,12 @@ function oDataFilter() {
     echo "$f"
 }
 
+function urlEncode() {
+    # Percent-encodes the given value ($1), for use as a URL path segment or query value
+
+    jq --raw-output --null-input --arg value "$1" '$value|@uri'
+}
+
 function clHeadOp() {
     # Executes a curl HEAD request with the CL auth_token for the given URL ($1)
     # Expects env: auth_token
@@ -38,6 +44,24 @@ function clDataOp() {
     curl --silent --header 'Content-Type: application/json' --header "Authorization: Bearer $auth_token" \
         --request "$1" "$2" \
         --data "$3"
+}
+
+function clFileOp() {
+    # Executes a curl request with the CL auth_token for the given method ($1) URL ($2) file ($3)
+    # content type ($4) and Content-Disposition ($5)
+    # Expects env: auth_token
+
+    curl --silent --header "Content-Type: $4" --header "Content-Disposition: $5" \
+        --header "Authorization: Bearer $auth_token" \
+        --request "$1" "$2" \
+        --data-binary "@$3"
+}
+
+function clDownloadOp() {
+    # Executes a curl download with the CL auth_token for the given URL ($1) into the given file ($2)
+    # Expects env: auth_token
+
+    curl --silent --header "Authorization: Bearer $auth_token" --output "$2" "$1"
 }
 
 alias odfilter="oDataFilter"
@@ -876,6 +900,21 @@ function clChatDataOp() {
     clDataOp "$1" "https://chat$cloud.api.mitel.io/2017-09-01/$2" "$3"
 }
 
+function clChatFileOp() {
+    # Executes a chat file request with the CL auth_token for the given method ($1) subpath ($2) file ($3)
+    # content type ($4) and Content-Disposition ($5)
+    # Expects env: auth_token, cloud
+
+    clFileOp "$1" "https://chat$cloud.api.mitel.io/2017-09-01/$2" "$3" "$4" "$5"
+}
+
+function clChatDownloadOp() {
+    # Downloads a chat resource with the CL auth_token for the given subpath ($1) into the given file ($2)
+    # Expects env: auth_token, cloud
+
+    clDownloadOp "https://chat$cloud.api.mitel.io/2017-09-01/$1" "$2"
+}
+
 function clGetChatAccountById() {
     # Gets chat cached account record for the given accountId ($1)
     # Expects env: auth_token, cloud
@@ -939,6 +978,72 @@ function clPostMessageText() {
     clPostMessage $1 "{\"body\":\"$2\"}"
 }
 
+function clListAttachments() {
+    # Lists attachments for the given conversationId ($1) with optional query params ($2)
+    # Expects env: auth_token, cloud
+
+    clChatOp GET "conversations/$1/attachments$2"
+}
+
+function clPutAttachment() {
+    # Uploads the file ($2) to the given conversationId ($1), with optional attachmentId ($3, defaults to
+    # the file name) and content type ($4, defaults to the type detected from the file).
+    # Expects env: auth_token, cloud
+
+    local name=$(basename "$2")
+    local id=$(urlEncode "${3:-$name}")
+
+    clChatFileOp PUT "conversations/$1/attachments/$id" "$2" \
+        "${4:-$(file --brief --mime-type "$2")}" "attachment; filename=\"$name\""
+}
+
+function clGetAttachment() {
+    # Downloads the attachment for the given conversationId ($1) and attachmentId ($2) into the given
+    # file ($3, defaults to the attachmentId)
+    # Expects env: auth_token, cloud
+
+    clChatDownloadOp "conversations/$1/attachments/$(urlEncode "$2")" "${3:-$2}"
+}
+
+function clDeleteAttachment() {
+    # Deletes the attachment for the given conversationId ($1) and attachmentId ($2)
+    # Expects env: auth_token, cloud
+
+    clChatOp DELETE "conversations/$1/attachments/$(urlEncode "$2")"
+}
+
+function clGetAttachmentMeta() {
+    # Gets the attachment metadata, including a signed URL, for the given conversationId ($1) and
+    # attachmentId ($2), with optional disposition type ($3, inline or attachment) and expiry in
+    # minutes ($4, defaults to 5)
+    # Expects env: auth_token, cloud
+
+    local expiry=$(date --utc --date "+${4:-5} minutes" +%Y-%m-%dT%H:%M:%SZ)
+    local query="?signed-url-expiry=$expiry${3:+&content-disposition=$3}"
+
+    clChatOp GET "conversations/$1/attachments/$(urlEncode "$2")/meta$query"
+}
+
+function clGetSignedAttachment() {
+    # Downloads the signed URL for the given conversationId ($1) and attachmentId ($2), with optional
+    # disposition type ($3, inline or attachment) and target directory ($4, defaults to the current one).
+    # Takes the file name from the Content-Disposition header, and prints the response headers.
+    # The signed URL carries its own credentials, so the CL auth_token is not sent
+    # Expects env: auth_token, cloud
+
+    local url=$(clGetAttachmentMeta "$1" "$2" "$3" | jq --raw-output '._embedded.signedUrl.url')
+
+    curl --silent --dump-header - --remote-name --remote-header-name --create-dirs \
+        --output-dir "${4:-.}" "$url"
+}
+
+function clPutAttachmentMeta() {
+    # Updates the attachment metadata for the given conversationId ($1) attachmentId ($2) and data ($3)
+    # Expects env: auth_token, cloud
+
+    clChatDataOp PUT "conversations/$1/attachments/$(urlEncode "$2")/meta" "$3"
+}
+
 alias clconv-l='clChatOp GET conversations'
 alias clconv-g="clGetConversation"
 alias cluconv-l='clChatOp GET users/me/conversations'
@@ -947,6 +1052,14 @@ alias clcmsg-c="clPostMessageText"
 alias clcacc-g="clGetChatAccountById"
 alias clcacctrans-c="clPostAccountTranscript"
 alias clchat-spec="clGetChatSpec"
+
+alias clcatt-l="clListAttachments"
+alias clcatt-c="clPutAttachment"
+alias clcatt-g="clGetAttachment"
+alias clcatt-gs="clGetSignedAttachment"
+alias clcatt-d="clDeleteAttachment"
+alias clcameta-g="clGetAttachmentMeta"
+alias clcameta-u="clPutAttachmentMeta"
 
 # DataLake API
 
