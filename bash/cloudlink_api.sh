@@ -371,6 +371,41 @@ function clAdminDataOp() {
     clDataOp "$1" "https://admin$cloud.api.mitel.io/2017-09-01/$2" "$3"
 }
 
+function clAdminListOp() {
+    # Executes a curl GET with the CL auth_token for the given admin subpath ($1), following the
+    # _links.next of each page, and emits the accumulated _embedded.items as a single JSON array
+    # Expects env: auth_token, cloud
+
+    local subpath="$1" page next pages pageNumber=0 status=0
+
+    # The pages are spooled to a file, an accumulated JSON argument outgrows the argument list
+    pages=$(mktemp) || return 1
+
+    while [[ -n $subpath ]]; do
+        echo "reading page $((++pageNumber)), $subpath" >&2
+        page=$(clAdminOp GET "$subpath") || { status=1; break; }
+
+        # A collection carries _links and _embedded, an error body carries a message instead
+        if ! jq --exit-status 'type == "object" and (has("_links") or has("_embedded"))' \
+            <<< "$page" > /dev/null 2>&1; then
+            echo "clAdminListOp: page $pageNumber failed, $subpath" >&2
+            jq '.' <<< "$page" >&2 2> /dev/null || echo "${page:-<empty response>}" >&2
+            status=1
+            break
+        fi
+
+        jq --compact-output '._embedded.items // []' <<< "$page" >> "$pages" || { status=1; break; }
+        next=$(jq --raw-output '._links.next // empty | if type == "object" then .href else . end' <<< "$page")
+        # The next link is an absolute API path, the ops take a subpath relative to the API version
+        subpath="${next#/2017-09-01/}"
+    done
+
+    (( status == 0 )) && { jq --slurp 'add // []' "$pages" || status=1; }
+
+    rm --force "$pages"
+    return $status
+}
+
 function clListAccounts() {
     # List accounts with optional query params ($1)
     # Expects env: auth_token, cloud
@@ -540,10 +575,13 @@ function clPostChatMicroAccountPolicyStatement() {
 }
 
 function clListUsers() {
-    # Lists users for accountId ($1) and optional query params ($2)
+    # Lists users for accountId ($1) and optional query params ($2), following the paged results
     # Expects env: auth_token, cloud
 
-    clAdminOp GET "accounts/$1/users$2" | jq '._embedded.items//[] | map(del(.sipPassword))'
+    local -  # Confines the option change to this function
+    set -o pipefail
+
+    clAdminListOp "accounts/$1/users$2" | jq 'map(del(.sipPassword))'
 }
 
 function clGetUser() {
@@ -613,7 +651,8 @@ function clListUserAssociations() {
     # Lists associations for userId ($1) and optional query params ($2)
     # Expects env: auth_token, cloud
 
-    clAdminOp GET "users/$1/associations$2" | jq 'del(.sipPassword)'
+    clAdminOp GET "users/$1/associations$2" \
+        | jq 'walk(if type == "object" then del(.sipPassword) else . end)'
 }
 
 function clListClients() {
