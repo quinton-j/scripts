@@ -473,6 +473,49 @@ function clListAccountsByPartnerId() {
         jq '._embedded.items // [] | map({name,accountId,accountNumber,partnerId,active,organizationId,sapId:.tags.mitel_connect_refs.sap_references_primary_1,createdOn,createdBy})'
 }
 
+function clListAccountAssociations() {
+    # Lists the associations for the provided accountId ($1) and optional query params ($2)
+    # Expects env: auth_token, cloud
+
+    clAdminOp GET "accounts/$1/associations$2" | jq '._embedded.items//[]'
+}
+
+function clGetAccountAssociation() {
+    # Gets the association for the provided accountId ($1) and associationId ($2)
+    # Expects env: auth_token, cloud
+
+    clAdminOp GET "accounts/$1/associations/$2"
+}
+
+function clCreateAccountAssociation() {
+    # Creates an association in the provided accountId ($1) with associatedEntityUri ($2),
+    # associationType ($3), and optional displayName ($4) and description ($5)
+    # Expects env: auth_token, cloud
+
+    local body=$(jq --null-input --compact-output \
+        --arg associatedEntityUri "$2" \
+        --arg associationType "$3" \
+        --arg displayName "$4" \
+        --arg description "$5" \
+        '{$associatedEntityUri ,$associationType ,$displayName ,$description} | with_entries(select(.value != ""))')
+
+    clAdminDataOp POST "accounts/$1/associations" "$body"
+}
+
+function clUpdateAccountAssociation() {
+    # Updates the association for the provided accountId ($1) and associationId ($2) with body ($3)
+    # Expects env: auth_token, cloud
+
+    clAdminDataOp PUT "accounts/$1/associations/$2" "$3"
+}
+
+function clDeleteAccountAssociation() {
+    # Deletes the association for the provided accountId ($1) and associationId ($2)
+    # Expects env: auth_token, cloud
+
+    clAdminOp DELETE "accounts/$1/associations/$2"
+}
+
 function clListUsersByRole() {
     # Lists users by role for the provided accountId ($1) and optional query params ($2)
     # Expects env: auth_token, cloud
@@ -755,6 +798,12 @@ alias clacc-d="clDeleteAccount"
 alias clacc-gbo="clGetAccountByOrganizationId"
 alias clacc-lbp="clListAccountsByPartnerId"
 alias clacc-lbn="clListAccountsContainingName"
+
+alias claa-l="clListAccountAssociations"
+alias claa-g="clGetAccountAssociation"
+alias claa-c="clCreateAccountAssociation"
+alias claa-u="clUpdateAccountAssociation"
+alias claa-d="clDeleteAccountAssociation"
 
 alias clatag-u="clPutAccountTag"
 alias clatag-d="clDeleteAccountTag"
