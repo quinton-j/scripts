@@ -134,10 +134,12 @@ function jiraUpdateIssue() {
 }
 
 function jiraTransitionIssue() {
-    # Transitions an issue ($1) to the given transition id ($2)
+    # Transitions an issue ($1) to the given transition id ($2), with an optional resolution name ($3) for a
+    # transition that requires one, such as Done
     # Expects env: jira_url, jira_token
 
-    jiraDataOp "POST" "issue/$1/transitions" "{\"transition\": {\"id\": \"$2\"}}"
+    jiraDataOp "POST" "issue/$1/transitions" "$(jq --null-input --compact-output --arg id "$2" --arg resolution "${3:-}" \
+        '{transition: {id: $id}} + (if $resolution == "" then {} else {fields: {resolution: {name: $resolution}}} end)')"
 }
 
 function jiraGetTransitions() {
@@ -162,6 +164,16 @@ function jiraAddCommentFile() {
     jq --null-input --compact-output --rawfile body "$2" '{body: $body}' |
         curl --silent --show-error --header 'Content-Type: application/json' --header "Authorization: Basic $jira_auth" \
             --request POST "$jira_url/rest/api/2/issue/$1/comment" \
+            --data @-
+}
+
+function jiraUpdateCommentFile() {
+    # Replaces the body of a comment ($2) on an issue ($1) with the body read from a file ($3), in Jira wiki markup
+    # Expects env: jira_url, jira_auth
+
+    jq --null-input --compact-output --rawfile body "$3" '{body: $body}' |
+        curl --silent --show-error --header 'Content-Type: application/json' --header "Authorization: Basic $jira_auth" \
+            --request PUT "$jira_url/rest/api/2/issue/$1/comment/$2" \
             --data @-
 }
 
@@ -223,6 +235,7 @@ alias jira-ti='jiraTransitionIssue'
 alias jira-gt='jiraGetTransitions'
 alias jira-ac='jiraAddComment'
 alias jira-acf='jiraAddCommentFile'
+alias jira-ucf='jiraUpdateCommentFile'
 alias jira-gc='jiraGetComments'
 alias jira-al='jiraAddLabels'
 alias jira-ai='jiraAssignIssue'
