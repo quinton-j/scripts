@@ -26,7 +26,7 @@ function clHeadOp() {
     # Executes a curl HEAD request with the CL auth_token for the given URL ($1)
     # Expects env: auth_token
 
-    curl --head --header 'Content-Type: application/json' --header "Authorization: Bearer $auth_token" $1
+    curl --head --header 'Content-Type: application/json' --header "Authorization: Bearer $auth_token" "$1"
 }
 
 function clOp() {
@@ -93,7 +93,7 @@ function clAuthOp() {
     # Executes a curl request with the CL auth_token for the given method ($1) auth resource ($2)
     # Expects env: auth_token, cloud
 
-    clOp $1 "https://authentication$cloud.api.mitel.io/2017-09-01/$2$3"
+    clOp "$1" "https://authentication$cloud.api.mitel.io/2017-09-01/$2$3"
 }
 
 function clGetAuthSpec() {
@@ -111,10 +111,16 @@ function clAuthDataOp() {
 }
 
 function clAuthPostToken() {
-    # Executes a curl request with the CL auth_token for the grant_type ($1) and params ($2)
+    # Executes a curl request with the CL auth_token for the grant_type ($1) and params JSON object ($2)
     # Expects env: auth_token, cloud
 
-    clAuthDataOp POST "token" "{\"grant_type\":\"$1\",$2}"
+    local body
+    body=$(jq --null-input --compact-output \
+        --arg grant_type "$1" \
+        --argjson params "$2" \
+        '{$grant_type} + $params') || return
+
+    clAuthDataOp POST "token" "$body"
 }
 
 function clAuthLoginPassword() {
@@ -138,9 +144,26 @@ function clAuthLoginPassword() {
         echo
     fi
 
-    tmpDir=${tmpDir:-${LOCALAPPDATA:-$TMP}/${USER:-$USERNAME}-cli} && mkdir --parents $tmpDir
-    local tmpFile=$tmpDir/token.tmp
-    clAuthPostToken "password" "\"username\":\"$username\",\"password\":\"$password\",\"account_id\":\"$accountid\"" > "$tmpFile"
+    tmpDir=${tmpDir:-${LOCALAPPDATA:-$TMP}/${USER:-$USERNAME}-cli} && mkdir --parents "$tmpDir"
+    local tmpFile="$tmpDir/token.tmp"
+    local credentialsTmpFile="$tmpDir/credentials.tmp"
+    local params
+    params=$(jq --null-input --compact-output \
+        --arg username "$username" \
+        --arg password "$password" \
+        --arg account_id "$accountid" \
+        '{$username ,$password ,$account_id}') || return
+
+    clAuthPostToken "password" "$params" > "$tmpFile"
+
+    # A failed login returns an error body, the credentials file is left untouched
+    if ! jq --exit-status '.access_token | strings' "$tmpFile" > /dev/null 2>&1; then
+        echo "clAuthLoginPassword: login failed, credentials file unchanged" >&2
+        jq 'del(.access_token ,.refresh_token)' "$tmpFile" >&2 2> /dev/null || cat "$tmpFile" >&2
+        rm --force "$tmpFile"
+        return 1
+    fi
+
     auth_token=$(jq --raw-output '.access_token' "$tmpFile")
 
     if [ ! -s "$clCredentialsFile" ] || ! jq empty "$clCredentialsFile" > /dev/null 2>&1; then
@@ -149,9 +172,16 @@ function clAuthLoginPassword() {
         echo '{}' > "$clCredentialsFile"
     fi
 
-    jq --arg cloud "${cloud:1}" --argjson token "$(jq --raw-output '{access_token ,refresh_token}' "$tmpFile")" \
-        '.[$cloud] = $token' "$clCredentialsFile" >"$tmpFile"
-    mv "$tmpFile" "$clCredentialsFile"
+    # The merge is written to its own file, and replaces the credentials file only when it succeeds
+    if jq --arg cloud "${cloud:1}" --slurpfile token "$tmpFile" \
+        '.[$cloud] = ($token[0] | {access_token ,refresh_token})' "$clCredentialsFile" > "$credentialsTmpFile"; then
+        mv "$credentialsTmpFile" "$clCredentialsFile"
+    else
+        echo "clAuthLoginPassword: could not update $clCredentialsFile, left unchanged" >&2
+        rm --force "$credentialsTmpFile"
+    fi
+
+    rm --force "$tmpFile"
     clAuthOp GET token | jq '.'
 }
 
@@ -166,14 +196,24 @@ function clCreateCredential() {
     # Adds a credential for the provided accountId ($1) and name ($2), type ($3), access restriction ($4), target ($5), and privateKey ($6)
     # Expects env: auth_token, cloud
 
-    clAuthDataOp POST "credentials" "{\"accountId\":\"$1\",\"name\":\"$2\",\"type\":\"$3\",\"accessRestriction\":\"$4\",\"target\":\"$5\",\"privateKey\":$6}"
+    local body
+    body=$(jq --null-input --compact-output \
+        --arg accountId "$1" \
+        --arg name "$2" \
+        --arg type "$3" \
+        --arg accessRestriction "$4" \
+        --arg target "$5" \
+        --argjson privateKey "$6" \
+        '{$accountId ,$name ,$type ,$accessRestriction ,$target ,$privateKey}') || return
+
+    clAuthDataOp POST "credentials" "$body"
 }
 
 function clUpdateCredential() {
     # Adds a credential for the provided credentialId ($1) and body ($2)
     # Expects env: auth_token, cloud
 
-    clAuthDataOp PUT "credentials/$1" $2
+    clAuthDataOp PUT "credentials/$1" "$2"
 }
 
 function clGetCredential() {
@@ -215,21 +255,26 @@ function clCreate3rdPartyApplication() {
     # Gets the application for provided appId ($1) and data ($2)
     # Expects env: auth_token, cloud
 
-    clAuthDataOp POST "applications/$1" $2
+    clAuthDataOp POST "applications/$1" "$2"
 }
 
 function clUpdateApplication() {
     # Gets the application for provided appId ($1) and data ($2)
     # Expects env: auth_token, cloud
 
-    clAuthDataOp PUT "applications/$1" $2
+    clAuthDataOp PUT "applications/$1" "$2"
 }
 
 function clDeleteApplication() {
     # Deletes the application for provided appId ($1) and optional accountId ($2)
     # Expects env: auth_token, cloud
 
-    clAuthDataOp DELETE "applications/$1" "{\"accountId\":\"$2\"}"
+    local body
+    body=$(jq --null-input --compact-output \
+        --arg accountId "$2" \
+        '{$accountId}') || return
+
+    clAuthDataOp DELETE "applications/$1" "$body"
 }
 
 function clListIdentityProviders() {
@@ -311,7 +356,7 @@ export clCredentialsFile=~/.cloudlink/credentials
 alias cltok-g="clAuthOp GET token"
 alias cltok-lp="clAuthLoginPassword"
 alias cltok-clip='printf %s "$auth_token" | xclip -selection clipboard'
-alias cltok-set='auth_token=$(jq --raw-output ".[\"${cloud:1}\"].access_token" $clCredentialsFile)'
+alias cltok-set='auth_token=$(jq --raw-output ".[\"${cloud:1}\"].access_token" "$clCredentialsFile")'
 alias clauth-spec="clGetAuthSpec"
 
 alias clcred-l="clListCredentials"
@@ -330,7 +375,6 @@ alias cl3pa-c="clCreate3rdPartyApplication"
 alias clsso-sg="clAuthOp GET saml2/status?username="
 alias clidp-l="clListIdentityProviders"
 alias clidp-g="clGetIdentityProvider"
-alias clscim-h="clCheckScim"
 
 alias clti-l="clListTrustedIssuers"
 alias clti-la="clListAccountTrustedIssuers"
@@ -354,7 +398,7 @@ function clAdminOp() {
     # Executes a curl request with the CL auth_token for the given method ($1) admin resource ($2)
     # Expects env: auth_token, cloud
 
-    clOp $1 "https://admin$cloud.api.mitel.io/2017-09-01/$2"
+    clOp "$1" "https://admin$cloud.api.mitel.io/2017-09-01/$2"
 }
 
 function clGetAdminSpec() {
@@ -381,7 +425,7 @@ function clAdminListOp() {
     # The pages are spooled to a file, an accumulated JSON argument outgrows the argument list
     pages=$(mktemp) || return 1
 
-    while [[ -n $subpath ]]; do
+    while [[ -n "$subpath" ]]; do
         echo "reading page $((++pageNumber)), $subpath" >&2
         page=$(clAdminOp GET "$subpath") || { status=1; break; }
 
@@ -403,7 +447,7 @@ function clAdminListOp() {
     (( status == 0 )) && { jq --slurp 'add // []' "$pages" || status=1; }
 
     rm --force "$pages"
-    return $status
+    return "$status"
 }
 
 function clListAccounts() {
@@ -417,7 +461,7 @@ function clListAccountsContainingName() {
     # Lists accounts whose name contains the provided name ($1), with optional query params ($2)
     # Expects env: auth_token, cloud
 
-    if [[ -z $1 ]]; then
+    if [[ -z "$1" ]]; then
         echo "clListAccountsContainingName: a name is required" >&2
         return 1
     fi
@@ -454,7 +498,7 @@ function clPutAccount() {
     # Updates the accountId ($1) with body ($2)
     # Expects env: auth_token, cloud
 
-    clAdminDataOp PUT "accounts/$1" $2
+    clAdminDataOp PUT "accounts/$1" "$2"
 }
 
 function clGetAccountByOrganizationId() {
@@ -541,7 +585,7 @@ function clPutPartner() {
     # Updates the partnertId ($1) with body ($2)
     # Expects env: auth_token, cloud
 
-    clAdminDataOp PUT "partners/$1" $2
+    clAdminDataOp PUT "partners/$1" "$2"
 }
 
 function clDeletePartner() {
@@ -598,9 +642,15 @@ function clPostPolicyStatement() {
     # Updates the policy statement with accountId ($1), policyId ($2), statementId ($3), effect ($4), action ($5), and resource ($6)
     # Expects env: auth_token, cloud
 
-    local data="{\"statementId\":\"$3\",\"effect\":\"$4\",\"action\":[\"$5\"],\"resource\":[\"$6\"]}"
+    local data
+    data=$(jq --compact-output --null-input \
+        --arg statementId "$3" \
+        --arg effect "$4" \
+        --arg action "$5" \
+        --arg resource "$6" \
+        '{statementId: $statementId, effect: $effect, action: [$action], resource: [$resource]}')
 
-    clPostPolicyStatements $1 $2 $data
+    clPostPolicyStatements "$1" "$2" "$data"
 }
 
 function clDeletePolicyStatement() {
@@ -608,13 +658,6 @@ function clDeletePolicyStatement() {
     # Expects env: auth_token, cloud
 
     clAdminOp DELETE "accounts/$1/policies/$2/statements/$3"
-}
-
-function clPostChatMicroAccountPolicyStatement() {
-    # Updates the policy statement with accountId ($1), statementId ($2) effect ($3)
-    # Expects env: auth_token, cloud
-
-    clPostPolicyStatement $1 account $2 $3 '*' "https://mitel.io/auth/conversations/features/$2"
 }
 
 function clListUsers() {
@@ -655,19 +698,36 @@ function clDeleteUser() {
     clAdminOp DELETE "accounts/$1/users/$2"
 }
 
+function clPostUserWelcome() {
+    # Sends the welcome email to the user with accountId ($1), userId ($2), and optional application ($3, defaults to accounts)
+    # Expects env: auth_token, cloud
+
+    local body
+    body=$(jq --null-input --compact-output \
+        --arg application "${3:-accounts}" \
+        '{$application}') || return
+
+    clAdminDataOp POST "accounts/$1/users/$2/welcome" "$body"
+}
+
 function clPutPassword() {
     # Updates the user with accountId ($1), userId ($2), action ($3), and password ($4)
     # Expects env: auth_token, cloud
 
-    clAdminDataOp PUT "accounts/$1/users/$2/password" "{\"action\":\"$3\",\"password\":\"$4\"}" \
-        | jq 'del(.sipPassword)'
+    local body
+    body=$(jq --null-input --compact-output \
+        --arg action "$3" \
+        --arg password "$4" \
+        '{$action ,$password}') || return
+
+    clAdminDataOp PUT "accounts/$1/users/$2/password" "$body" | jq 'del(.sipPassword)'
 }
 
 function clPutUserTag() {
     # Updates the user with accountId ($1), userId ($2), tagId ($3) and tag value ($4)
     # Expects env: auth_token, cloud
 
-    clAdminDataOp PUT "accounts/$1/users/$2/tags/$3" $4
+    clAdminDataOp PUT "accounts/$1/users/$2/tags/$3" "$4"
 }
 
 function clDeleteUserTag() {
@@ -681,11 +741,12 @@ function clPatchUsers() {
     # Updates the userIds (${@:4}) in accountId ($1), op ($2) command ($3)
     # Expects env: auth_token, cloud
 
-    local data='{"operations":['
-    for userId in ${@:4}; do
-        data="${data}{\"op\":\"$2\",\"id\":\"${userId}\",\"body\":$3},"
-    done
-    data="${data%?}]}"
+    local data
+    data=$(jq --null-input --compact-output \
+        --arg op "$2" \
+        --argjson body "$3" \
+        '{operations: [$ARGS.positional[] | {$op ,id: . ,$body}]}' \
+        --args "${@:4}") || return
 
     clAdminDataOp PATCH "accounts/$1/users" "$data" | jq '.operations//[] | map({statusCode,corrId:.headers."x-mitel-correlation-id",body:(.body | del(.sipPassword))})'
 }
@@ -723,8 +784,14 @@ function clPostClient() {
     # Creates a client for the provided accountId ($1) with name ($2), role ($3), and optional type ($4)
     # Expects env: auth_token, cloud
 
-    local type=${4:-APP}
-    clAdminDataOp POST "accounts/$1/clients" "{\"name\":\"$2\",\"role\":\"$3\",\"type\":\"$type\"}"
+    local body
+    body=$(jq --null-input --compact-output \
+        --arg name "$2" \
+        --arg role "$3" \
+        --arg type "${4:-APP}" \
+        '{$name ,$role ,$type}') || return
+
+    clAdminDataOp POST "accounts/$1/clients" "$body"
 }
 
 function clDeleteClient() {
@@ -821,7 +888,6 @@ alias clpol-g="clGetPolicy"
 alias clstate-l="clListPolicyStatements"
 alias clstate-g="clGetPolicyStatement"
 alias clstate-d="clDeletePolicyStatement"
-alias clstate-uc="clPostChatMicroAccountPolicyStatement"
 
 alias cluser-l="clListUsers"
 alias cluser-lbr="clListUsersByRole"
@@ -829,6 +895,7 @@ alias cluser-g="clGetUser"
 alias cluser-u="clPutUser"
 alias cluser-c="clPostUser"
 alias cluser-d="clDeleteUser"
+alias cluser-pw="clPostUserWelcome"
 alias cluser-mu="clPatchUsers"
 alias clua-l="clListUserAssociations"
 
@@ -860,7 +927,7 @@ function clDirectorOp() {
     # Executes a curl get request with the CL auth_token for the given method ($1) director subresource ($2)
     # Expects env: auth_token, cloud
 
-    clOp $1 "https://director$cloud.api.mitel.io/2018-07-01/$2$3"
+    clOp "$1" "https://director$cloud.api.mitel.io/2018-07-01/$2$3"
 }
 
 function clGetDirectorSpec() {
@@ -902,8 +969,14 @@ function clUpsertService() {
     # Upserts a registered service with the given name ($1), rank ($2), and host ($3)
     # Expects env: auth_token, cloud
 
-    local encodedHost=$(echo $3 | jq --raw-input --raw-output '@uri')
-    clDirectorDataOp PUT "services/$encodedHost" "{\"name\":\"$1\",\"rank\":$2}"
+    local encodedHost=$(echo "$3" | jq --raw-input --raw-output '@uri')
+    local body
+    body=$(jq --null-input --compact-output \
+        --arg name "$1" \
+        --argjson rank "$2" \
+        '{$name ,$rank}') || return
+
+    clDirectorDataOp PUT "services/$encodedHost" "$body"
 }
 
 function clListEventRouters() {
@@ -931,21 +1004,34 @@ function clUpdateEventRouter() {
     # Updates an EventRouter with the given id ($1) and eventType ($2) and destination ($3)
     # Expects env: auth_token, cloud
 
-    clDirectorDataOp PUT "event-routers/$1" "{\"eventType\":\"$2\",\"destination\":\"$3\"}"
+    local body
+    body=$(jq --null-input --compact-output \
+        --arg eventType "$2" \
+        --arg destination "$3" \
+        '{$eventType ,$destination}') || return
+
+    clDirectorDataOp PUT "event-routers/$1" "$body"
 }
 
 function clCreateEventRouter() {
     # Creates an EventRouter with the given account id ($1) and eventType ($2) and destination ($3)
     # Expects env: auth_token, cloud
 
-    clDirectorDataOp POST "event-routers" "{\"accountId\":\"$1\",\"eventType\":\"$2\",\"destination\":\"$3\"}"
+    local body
+    body=$(jq --null-input --compact-output \
+        --arg accountId "$1" \
+        --arg eventType "$2" \
+        --arg destination "$3" \
+        '{$accountId ,$eventType ,$destination}') || return
+
+    clDirectorDataOp POST "event-routers" "$body"
 }
 
 function clGetDiscovery() {
     # Gets director discovery for the domain ($1)
     # Expects env: auth_token, cloud
 
-    clOp GET "https://director$cloud.api.mitel.io/discovery/$domain"
+    clOp GET "https://director$cloud.api.mitel.io/discovery/$1"
 }
 
 alias cldir-spec="clGetDirectorSpec"
@@ -971,7 +1057,7 @@ function clChatOp() {
     # Executes a curl get request with the CL auth_token for the given method ($1) chat subresource ($2)
     # Expects env: auth_token, cloud
 
-    clOp $1 "https://chat$cloud.api.mitel.io/2017-09-01/$2$3"
+    clOp "$1" "https://chat$cloud.api.mitel.io/2017-09-01/$2$3"
 }
 
 function clGetChatSpec() {
@@ -1014,7 +1100,12 @@ function clPostAccountTranscript() {
     # Starts an account transcript for the provided accountId ($1) with optional contentType ($2, defaults to text/csv)
     # Expects env: auth_token, cloud
 
-    clChatDataOp POST "accounts/$1/transcripts" "{\"contentType\":\"${2:-text/csv}\"}"
+    local body
+    body=$(jq --null-input --compact-output \
+        --arg contentType "${2:-text/csv}" \
+        '{$contentType}') || return
+
+    clChatDataOp POST "accounts/$1/transcripts" "$body"
 }
 
 function clGetConversations() {
@@ -1056,14 +1147,19 @@ function clPostMessage() {
     # Post a message for the given conversationId ($1) with body ($2)
     # Expects env: auth_token, cloud
 
-    clChatDataOp POST "conversations/$1/messages" $2
+    clChatDataOp POST "conversations/$1/messages" "$2"
 }
 
 function clPostMessageText() {
     # Post a message for the given conversationId ($1) with text ($2)
     # Expects env: auth_token, cloud
 
-    clPostMessage $1 "{\"body\":\"$2\"}"
+    local body
+    body=$(jq --null-input --compact-output \
+        --arg body "$2" \
+        '{$body}') || return
+
+    clPostMessage "$1" "$body"
 }
 
 function clListAttachments() {
@@ -1155,7 +1251,7 @@ function clAnalyticsOp() {
     # Executes a curl get request with the CL auth_token for the given method ($1) subresource ($2)
     # Expects env: auth_token, cloud
 
-    clOp $1 "https://analytics$cloud.api.mitel.io/2020-06-19/$2"
+    clOp "$1" "https://analytics$cloud.api.mitel.io/2020-06-19/$2"
 }
 
 function clGetAnalyticsSpec() {
@@ -1181,7 +1277,7 @@ function clNotifyOp() {
     # Executes a curl get request with the CL auth_token for the given method ($1) subresource ($2) and optional query params ($3)
     # Expects env: auth_token, cloud
 
-    clOp $1 "https://notifications$cloud.api.mitel.io/2017-09-01/$2$3"
+    clOp "$1" "https://notifications$cloud.api.mitel.io/2017-09-01/$2$3"
 }
 
 function clGetNotifySpec() {
@@ -1202,7 +1298,7 @@ function clDeleteNotifySubscription() {
     # Deletes a subscription with the given subscriptionId ($1)
     # Expects env: auth_token, cloud
 
-    clNotifyOp DELETE subscriptions/$1
+    clNotifyOp DELETE "subscriptions/$1"
 }
 
 function clDeleteNotifySubscriptions() {
@@ -1212,7 +1308,7 @@ function clDeleteNotifySubscriptions() {
     local subscriptionIds=$(clGetNotifySubscriptions | jq --raw-output '._embedded.items[].subscriptionId')
     for subscriptionId in $subscriptionIds; do
         echo "Deleting subscription $subscriptionId"
-        clDeleteNotifySubscription $subscriptionId
+        clDeleteNotifySubscription "$subscriptionId"
     done
 }
 
@@ -1227,7 +1323,7 @@ function clSysManOp() {
     # Executes a curl request with the CL auth_token for the given method ($1) system manager resource ($2)
     # Expects env: auth_token, cloud
 
-    clOp $1 "https://system-manager$cloud.api.mitel.io/2023-07-01/$2"
+    clOp "$1" "https://system-manager$cloud.api.mitel.io/2023-07-01/$2"
 }
 
 function clGetSysManSpec() {
@@ -1277,7 +1373,7 @@ function clBillingOp() {
     # Executes a curl request with the CL auth_token for the given method ($1) billing resource ($2)
     # Expects env: auth_token, cloud
 
-    clOp $1 "https://billing$cloud.api.mitel.io/2019-03-01/$2"
+    clOp "$1" "https://billing$cloud.api.mitel.io/2019-03-01/$2"
 }
 
 function clGetBillingSpec() {
@@ -1300,7 +1396,7 @@ function clPresenceOp() {
     # Executes a curl request with the CL auth_token for the given method ($1) and presence resource ($2)
     # Expects env: auth_token, cloud
 
-    clOp $1 "https://presence$cloud.api.mitel.io/2017-09-01/$2"
+    clOp "$1" "https://presence$cloud.api.mitel.io/2017-09-01/$2"
 }
 
 function clGetPresenceSpec() {
@@ -1365,7 +1461,16 @@ function clPatchSource() {
     local reason=$6
     local extended=$7
 
-    clPresenceDataOp PATCH presentities "{\"ops\":[{\"op\":\"replace\",\"path\":\"/$principalId/categories/$sourceType/$sourceId\",\"value\":{\"accountId\":\"$accountId\",\"status\":\"$status\",\"reason\":\"$reason\",\"extended\":$extended}}]}"
+    local body
+    body=$(jq --null-input --compact-output \
+        --arg path "/$principalId/categories/$sourceType/$sourceId" \
+        --arg accountId "$accountId" \
+        --arg status "$status" \
+        --arg reason "$reason" \
+        --argjson extended "$extended" \
+        '{ops: [{op: "replace" ,$path ,value: {$accountId ,$status ,$reason ,$extended}}]}') || return
+
+    clPresenceDataOp PATCH presentities "$body"
 }
 
 alias clpres-l="clListPresentities"
@@ -1382,7 +1487,7 @@ function clMediaOp() {
     # Executes a curl request with the CL auth_token for the given method ($1) and media resource ($2)
     # Expects env: auth_token, cloud
 
-    clOp $1 "https://media$cloud.api.mitel.io/2017-09-01/$2"
+    clOp "$1" "https://media$cloud.api.mitel.io/2017-09-01/$2"
 }
 
 function clGetMediaSpec() {
@@ -1390,13 +1495,6 @@ function clGetMediaSpec() {
     # Expects env: auth_token, cloud
 
     clMediaOp GET "_spec"
-}
-
-function clMediaOp() {
-    # Executes a curl request with the CL auth_token for the given method ($1) and media resource ($2)
-    # Expects env: auth_token, cloud
-
-    clOp $1 "https://media$cloud.api.mitel.io/2017-09-01/$2"
 }
 
 function clGatewayLinks() {
@@ -1416,7 +1514,7 @@ function clTunnelOp() {
     # Executes a curl request with the CL auth_token for the given method ($1) and tunnel resource ($2)
     # Expects env: auth_token, cloud
 
-    clOp $1 "https://tunnel$cloud.api.mitel.io/2017-09-01/$2"
+    clOp "$1" "https://tunnel$cloud.api.mitel.io/2017-09-01/$2"
 }
 
 function clGetTunnelSpec() {
@@ -1443,7 +1541,7 @@ function clWorkflowOp() {
     # Executes a curl request with the CL auth_token for the given method ($1) and workflow resource ($2)
     # Expects env: auth_token, cloud
 
-    clOp $1 "https://workflow$cloud.api.mitel.io/2017-09-01/$2"
+    clOp "$1" "https://workflow$cloud.api.mitel.io/2017-09-01/$2"
 }
 
 function clGetWorkflowSpec() {
