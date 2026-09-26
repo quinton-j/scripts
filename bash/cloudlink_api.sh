@@ -22,6 +22,10 @@ function urlEncode() {
     jq --raw-output --null-input --arg value "$1" '$value|@uri'
 }
 
+# curl --write-out format that reports the status code and correlation id of a request on stderr,
+# leaving the response body on stdout for jq
+clWriteOut='%{stderr}status: %{http_code} corrId: %header{x-mitel-correlation-id}\n'
+
 function clHeadOp() {
     # Executes a curl HEAD request with the CL auth_token for the given URL ($1)
     # Expects env: auth_token
@@ -34,7 +38,7 @@ function clOp() {
     # Expects env: auth_token
 
     curl --silent --header 'Content-Type: application/json' --header "Authorization: Bearer $auth_token" \
-        --request "$1" "$2"
+        --write-out "$clWriteOut" --request "$1" "$2"
 }
 
 function clDataOp() {
@@ -42,7 +46,7 @@ function clDataOp() {
     # Expects env: auth_token
 
     curl --silent --header 'Content-Type: application/json' --header "Authorization: Bearer $auth_token" \
-        --request "$1" "$2" \
+        --write-out "$clWriteOut" --request "$1" "$2" \
         --data "$3"
 }
 
@@ -53,7 +57,7 @@ function clFileOp() {
 
     curl --silent --header "Content-Type: $4" --header "Content-Disposition: $5" \
         --header "Authorization: Bearer $auth_token" \
-        --request "$1" "$2" \
+        --write-out "$clWriteOut" --request "$1" "$2" \
         --data-binary "@$3"
 }
 
@@ -61,7 +65,7 @@ function clDownloadOp() {
     # Executes a curl download with the CL auth_token for the given URL ($1) into the given file ($2)
     # Expects env: auth_token
 
-    curl --silent --header "Authorization: Bearer $auth_token" --output "$2" "$1"
+    curl --silent --header "Authorization: Bearer $auth_token" --write-out "$clWriteOut" --output "$2" "$1"
 }
 
 alias odfilter="oDataFilter"
