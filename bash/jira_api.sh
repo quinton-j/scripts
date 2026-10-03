@@ -14,12 +14,21 @@ function jiraRequest() {
     # data. Every request of this file goes through here.
     # Prints the response body. On an HTTP error it prints the body as well, writes the status and Jira's own error
     # messages to stderr, and fails, so a caller can test the exit status instead of the body
+    # With --output, curl writes the body to that file instead, so an HTTP error reads Jira's messages from the file
     # Expects env: jira_url, jira_auth
 
     local response
     local curlStatus=0
     local status
     local body
+    local output=''
+    local previous=''
+    local argument
+
+    for argument in "${@:3}"; do
+        [ "$previous" = '--output' ] && output=$argument
+        previous=$argument
+    done
 
     response=$(curl --silent --show-error --write-out '\n%{http_code}' \
         --header 'Content-Type: application/json' --header "Authorization: Basic $jira_auth" \
@@ -35,6 +44,7 @@ function jiraRequest() {
         echo "jira: $1 ${2#"$jira_url"} failed, curl exit $curlStatus" >&2
         return "$curlStatus"
     elif [ "$status" -ge 400 ]; then
+        [ -n "$output" ] && [ -f "$output" ] && body=$(< "$output")
         echo "jira: $1 ${2#"$jira_url"} answered $status: $(jiraErrors "$body")" >&2
         return 1
     fi
