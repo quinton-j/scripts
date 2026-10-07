@@ -69,11 +69,11 @@ function clDownloadOp() {
 }
 
 alias odfilter="oDataFilter"
-alias cldt="jq 'del(.tags)'"
-alias cldle="jq 'del(._links ,._embedded)'"
-alias cldmeta="jq 'del(.createdOn ,.createdBy ,.modifiedOn ,.modifiedBy)'"
-alias clmin="cldle | cldmeta | cldt"
-alias clamin="jq 'map(del(._links ,._embedded) | del(.createdOn ,.createdBy ,.modifiedOn ,.modifiedBy) | del(.tags,.avatars))'"
+clEachRecord='if type == "array" then .[] else . end'
+alias cldt="jq 'del($clEachRecord | .tags)'"
+alias cldle="jq 'del($clEachRecord | ._links ,._embedded)'"
+alias cldmeta="jq 'del($clEachRecord | .createdOn ,.createdBy ,.modifiedOn ,.modifiedBy)'"
+alias clmin="cldle | cldmeta | cldt | jq 'del($clEachRecord | .avatars)'"
 alias cli2a="jq '._embedded.items'"
 alias o2csv="jq --raw-output '(.[0] | keys_unsorted) as \$keys | \$keys, (.[] | [.[]]) | @csv'"
 
