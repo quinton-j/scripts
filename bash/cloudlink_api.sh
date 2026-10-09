@@ -74,8 +74,8 @@ alias cldt="jq 'del($clEachRecord | .tags)'"
 alias cldle="jq 'del($clEachRecord | ._links ,._embedded)'"
 alias cldmeta="jq 'del($clEachRecord | .createdOn ,.createdBy ,.modifiedOn ,.modifiedBy)'"
 alias clmin="cldle | cldmeta | cldt | jq 'del($clEachRecord | .avatars)'"
-alias cli2a="jq '._embedded.items'"
-alias o2csv="jq --raw-output '(.[0] | keys_unsorted) as \$keys | \$keys, (.[] | [.[]]) | @csv'"
+alias cli2a="jq '._embedded.items // []'"
+alias o2csv="jq --raw-output 'select(length > 0) | (.[0] | keys_unsorted) as \$keys | \$keys, (.[] | [.[]]) | @csv'"
 
 function csv2o {
   jq --raw-input --null-input '
