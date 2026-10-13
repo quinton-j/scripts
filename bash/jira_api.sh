@@ -331,11 +331,10 @@ alias jira-sc='jiraSearchCount'
 # Attachments
 
 function jiraListAttachments() {
-    # Lists the attachments of an issue ($1), one line each: id, file name, MIME type and size
+    # Lists the attachments of an issue ($1) in .fields.attachment. Each .id is what jiraDownloadAttachment takes
     # Expects env: jira_url, jira_auth
 
-    jiraGetIssueFields "$1" "attachment" |
-        jq --raw-output '.fields.attachment[] | [.id, .filename, .mimeType, .size] | @tsv'
+    jiraGetIssueFields "$1" "attachment"
 }
 
 function jiraDownloadAttachment() {
@@ -371,6 +370,49 @@ function jiraAddRemoteLink() {
 
 alias jira-grl='jiraGetRemoteLinks'
 alias jira-arl='jiraAddRemoteLink'
+
+# Issue links
+
+function jiraListIssueLinkTypes() {
+    # Lists the issue link types in .issueLinkTypes
+    # Each .name is what jiraAddIssueLink takes, for example Relates, Blocks or Depends
+    # Expects env: jira_url, jira_auth
+
+    jiraOp "GET" "issueLinkType"
+}
+
+function jiraListIssueLinks() {
+    # Lists the links of an issue ($1) in .fields.issuelinks. Each .id is what jiraDeleteIssueLink takes
+    # A link is an arrow from inwardIssue to outwardIssue. .type.outward reads along it, and .type.inward against it
+    # Each entry leaves out $1 and holds only the other end, under the same name it has in the jiraAddIssueLink payload:
+    #   .outwardIssue reads "$1 <.type.outward> <.outwardIssue.key>", for example "CL-1 blocks CL-2" on CL-1
+    #   .inwardIssue reads "$1 <.type.inward> <.inwardIssue.key>", for example "CL-2 is blocked by CL-1" on CL-2
+    # Expects env: jira_url, jira_auth
+
+    jiraGetIssueFields "$1" "issuelinks"
+}
+
+function jiraAddIssueLink() {
+    # Links an issue ($1) to another issue ($3) with a link type name ($2), so that it reads "$1 <outward> $3", for
+    # example jiraAddIssueLink CL-1 Blocks CL-2 gives "CL-1 blocks CL-2"
+    # A link is an arrow from inwardIssue to outwardIssue, and .type.outward reads along it, so $1 is the inwardIssue
+    # Expects env: jira_url, jira_auth
+
+    jiraDataOp "POST" "issueLink" "$(jq --null-input --compact-output --arg from "$1" --arg type "$2" --arg to "$3" \
+        '{type: {name: $type}, inwardIssue: {key: $from}, outwardIssue: {key: $to}}')"
+}
+
+function jiraDeleteIssueLink() {
+    # Deletes an issue link by id ($1), which removes it from both issues
+    # Expects env: jira_url, jira_auth
+
+    jiraOp "DELETE" "issueLink/$1"
+}
+
+alias jira-lilt='jiraListIssueLinkTypes'
+alias jira-lil='jiraListIssueLinks'
+alias jira-ail='jiraAddIssueLink'
+alias jira-dil='jiraDeleteIssueLink'
 
 # Sprints / Boards (Agile API)
 
