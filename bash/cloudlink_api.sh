@@ -349,11 +349,20 @@ function clDeleteTrustedIssuer() {
 }
 
 function clGetWellKnownJwks() {
-    # Gets the identity providers for the account id ($1)
+    # Gets the JSON Web Key Set for the account id ($1)
     # Expects env: auth_token, cloud
 
     local accountId=${1:-'*'}
     clAuthOp GET "accounts/$accountId/.well-known/jwks.json"
+}
+
+function clGetWellKnown() {
+    # Gets the auth well-known metadata at the subpath ($1), with optional query params ($2)
+    # For example: oauth-authorization-server, openid-configuration or mitel/hydra
+    # These routes sit at the host root, outside the versioned base path of clAuthOp
+    # Expects env: auth_token, cloud
+
+    clOp GET "https://authentication$cloud.api.mitel.io/.well-known/$1$2"
 }
 
 export clCredentialsFile=~/.cloudlink/credentials
@@ -388,6 +397,7 @@ alias clti-u="clUpdateTrustedIssuer"
 alias clti-d="clDeleteTrustedIssuer"
 
 alias cljwks-g="clGetWellKnownJwks"
+alias clwk-g="clGetWellKnown"
 
 # Admin API
 
@@ -1032,9 +1042,11 @@ function clCreateEventRouter() {
 }
 
 function clGetDiscovery() {
-    # Gets director discovery for the domain ($1)
+    # Gets director discovery for the domain ($1), and reports the 302 redirect URL with the status on stderr
     # Expects env: auth_token, cloud
 
+    # clOp reads clWriteOut through bash dynamic scope, so this local applies only to this request
+    local clWriteOut="${clWriteOut%\\n} location: %header{location}\n"
     clOp GET "https://director$cloud.api.mitel.io/discovery/$1"
 }
 
