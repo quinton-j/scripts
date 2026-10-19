@@ -480,13 +480,6 @@ function clAdminListOp() {
 }
 
 function clListAccounts() {
-    # List accounts with optional query params ($1), one page only
-    # Expects env: auth_token, cloud
-
-    clAdminOp GET "accounts?\$expand=tags$1"
-}
-
-function clListAccountsPaged() {
     # Lists accounts with optional query params ($1), following every page, as one JSON array
     # Expects env: auth_token, cloud
 
@@ -513,7 +506,7 @@ function clListAccountsContainingName() {
         filter+="substringof(name,%27${encoded}%27)%20or%20"
     done
 
-    clListAccountsPaged "&\$filter=${filter%\%20or\%20}$2"
+    clListAccounts "&\$filter=${filter%\%20or\%20}$2"
 }
 
 function clGetAccount() {
@@ -549,7 +542,7 @@ function clListAccountsByPartnerId() {
     # Lists the accounts for the provided partnerId ($1) and optional query params ($2)
     # Expects env: auth_token, cloud
 
-    clListAccountsPaged "&\$filter=partnerId%20eq%20%27$1%27$2" |
+    clListAccounts "&\$filter=partnerId%20eq%20%27$1%27$2" |
         jq 'map({name,accountId,accountNumber,partnerId,active,organizationId,sapId:.tags.mitel_connect_refs.sap_references_primary_1,createdOn,createdBy})'
 }
 
@@ -895,7 +888,6 @@ function clHeadScim() {
 }
 
 alias clacc-l="clListAccounts"
-alias clacc-lp="clListAccountsPaged"
 alias clacc-g="clGetAccount"
 alias clacc-u="clPutAccount"
 alias clacc-d="clDeleteAccount"
