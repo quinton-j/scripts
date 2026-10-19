@@ -434,7 +434,21 @@ function clAdminListOp() {
     # _links.next of each page, and emits the accumulated _embedded.items as a single JSON array
     # Expects env: auth_token, cloud
 
-    local subpath="$1" page next pages pageNumber=0 status=0
+    local subpath="$1" separator='?' page next pages pageNumber=0 status=0
+
+    # Admin pages an OpenSearch list by offset, which stops at 10,000 results, unless the first request
+    # has $skipToken. The page size and the token are added unless the caller sets them, and a caller
+    # that pages with $skip keeps it, since admin refuses a request with both
+    if [[ "$subpath" == *'?'* ]]; then
+        separator='&'
+    fi
+    if [[ "$subpath" != *'$top='* ]]; then
+        subpath+="${separator}\$top=1000"
+        separator='&'
+    fi
+    if [[ "$subpath" != *'$skip'* ]]; then
+        subpath+="${separator}\$skipToken="
+    fi
 
     # The pages are spooled to a file, an accumulated JSON argument outgrows the argument list
     pages=$(mktemp) || return 1
@@ -454,8 +468,9 @@ function clAdminListOp() {
 
         jq --compact-output '._embedded.items // []' <<< "$page" >> "$pages" || { status=1; break; }
         next=$(jq --raw-output '._links.next // empty | if type == "object" then .href else . end' <<< "$page")
-        # The next link is an absolute API path, the ops take a subpath relative to the API version
-        subpath="${next#/2017-09-01/}"
+        # The next link is an absolute API path, the ops take a subpath relative to the API version.
+        # Admin leaves the query of the link unencoded, and curl rejects a URL with a space in it
+        subpath=$(sed "s/ /%20/g; s/'/%27/g" <<< "${next#/2017-09-01/}")
     done
 
     (( status == 0 )) && { jq --slurp 'add // []' "$pages" || status=1; }
@@ -465,10 +480,17 @@ function clAdminListOp() {
 }
 
 function clListAccounts() {
-    # List accounts with optional query params ($1)
+    # List accounts with optional query params ($1), one page only
     # Expects env: auth_token, cloud
 
     clAdminOp GET "accounts?\$expand=tags$1"
+}
+
+function clListAccountsPaged() {
+    # Lists accounts with optional query params ($1), following every page, as one JSON array
+    # Expects env: auth_token, cloud
+
+    clAdminListOp "accounts?\$expand=tags$1"
 }
 
 function clListAccountsContainingName() {
@@ -491,7 +513,7 @@ function clListAccountsContainingName() {
         filter+="substringof(name,%27${encoded}%27)%20or%20"
     done
 
-    clListAccounts "&\$top=10000&\$filter=${filter%\%20or\%20}$2"
+    clListAccountsPaged "&\$filter=${filter%\%20or\%20}$2"
 }
 
 function clGetAccount() {
@@ -527,15 +549,15 @@ function clListAccountsByPartnerId() {
     # Lists the accounts for the provided partnerId ($1) and optional query params ($2)
     # Expects env: auth_token, cloud
 
-    clAdminOp GET "accounts?\$top=10000&\$expand=tags&\$filter=partnerId%20eq%20%27$1%27$2" |
-        jq '._embedded.items // [] | map({name,accountId,accountNumber,partnerId,active,organizationId,sapId:.tags.mitel_connect_refs.sap_references_primary_1,createdOn,createdBy})'
+    clListAccountsPaged "&\$filter=partnerId%20eq%20%27$1%27$2" |
+        jq 'map({name,accountId,accountNumber,partnerId,active,organizationId,sapId:.tags.mitel_connect_refs.sap_references_primary_1,createdOn,createdBy})'
 }
 
 function clListAccountAssociations() {
     # Lists the associations for the provided accountId ($1) and optional query params ($2)
     # Expects env: auth_token, cloud
 
-    clAdminOp GET "accounts/$1/associations$2" | jq '._embedded.items//[]'
+    clAdminListOp "accounts/$1/associations$2"
 }
 
 function clGetAccountAssociation() {
@@ -578,7 +600,7 @@ function clListUsersByRole() {
     # Lists users by role for the provided accountId ($1) and optional query params ($2)
     # Expects env: auth_token, cloud
 
-    clAdminOp GET "accounts/$1/users$2" | jq '._embedded.items//[] | group_by(.role) | map({accountId:.[0].accountId,role:.[0].role,users:(. | del(.[].sipPassword)),count:length })'
+    clAdminListOp "accounts/$1/users$2" | jq 'group_by(.role) | map({accountId:.[0].accountId,role:.[0].role,users:(. | del(.[].sipPassword)),count:length })'
 }
 
 function clGetPartner() {
@@ -592,7 +614,7 @@ function clListPartners() {
     # Lists partners with optional query params ($1)
     # Expects env: auth_token, cloud
 
-    clAdminOp GET "partners$1"
+    clAdminListOp "partners$1"
 }
 
 function clPutPartner() {
@@ -614,7 +636,7 @@ function clListPolicies() {
     # Lists policies in accountId ($1), and optional query params ($2)
     # Expects env: auth_token, cloud
 
-    clAdminOp GET "accounts/$1/policies$2"
+    clAdminListOp "accounts/$1/policies$2"
 }
 
 function clGetPolicy() {
@@ -769,7 +791,7 @@ function clListUserAssociations() {
     # Lists associations for userId ($1) and optional query params ($2)
     # Expects env: auth_token, cloud
 
-    clAdminOp GET "users/$1/associations$2" \
+    clAdminListOp "users/$1/associations$2" \
         | jq 'walk(if type == "object" then del(.sipPassword) else . end)'
 }
 
@@ -777,11 +799,11 @@ function clListClients() {
     # Lists the clients for the provided accountId ($1) and optional query params ($2)
     # Expects env: auth_token, cloud
 
-    clAdminOp GET "accounts/$1/clients$2" | jq '._embedded.items//[]'
+    clAdminListOp "accounts/$1/clients$2"
 }
 
 function clGetClient() {
-    # Gets the clients for the provided accountId ($1) and clientId ($2)
+    # Gets the client for the provided accountId ($1) and clientId ($2)
     # Expects env: auth_token, cloud
 
     clAdminOp GET "accounts/$1/clients/$2"
@@ -819,32 +841,32 @@ function clListContacts() {
     # Lists the contacts for the provided accountId ($1) with optional query params ($2)
     # Expects env: auth_token, cloud
 
-    clAdminOp GET "accounts/$1/contacts$2"
+    clAdminListOp "accounts/$1/contacts$2"
 }
 
 function clListGroups() {
     # Lists the groups for the provided accountId ($1) and optional query params ($2)
     # Expects env: auth_token, cloud
 
-    clAdminOp GET "accounts/$1/groups$2"
+    clAdminListOp "accounts/$1/groups$2"
 }
 
 function clGetGroup() {
-    # Gets the clients for the provided accountId ($1) and groupId ($2)
+    # Gets the group for the provided accountId ($1) and groupId ($2)
     # Expects env: auth_token, cloud
 
     clAdminOp GET "accounts/$1/groups/$2"
 }
 
 function clListGroupMembers() {
-    # Lists the clients for the provided accountId ($1) and groupId ($2)
+    # Lists the members of the group for the provided accountId ($1) and groupId ($2), with optional query params ($3)
     # Expects env: auth_token, cloud
 
-    clAdminOp GET "accounts/$1/groups/$2/members"
+    clAdminListOp "accounts/$1/groups/$2/members$3"
 }
 
 function clGetGroupMember() {
-    # Gets the clients for the provided accountId ($1), groupId ($2), and memberId ($3)
+    # Gets the group member for the provided accountId ($1), groupId ($2), and memberId ($3)
     # Expects env: auth_token, cloud
 
     clAdminOp GET "accounts/$1/groups/$2/members/$3"
@@ -854,7 +876,7 @@ function clListSites() {
     # Lists the sites for the provided accountId ($1) and optional query params ($2)
     # Expects env: auth_token, cloud
 
-    clAdminOp GET "accounts/$1/sites$2" | jq '._embedded.items//[] | map(del(._links))'
+    clAdminListOp "accounts/$1/sites$2" | jq 'map(del(._links))'
 }
 
 function clListAdminServices() {
@@ -873,6 +895,7 @@ function clHeadScim() {
 }
 
 alias clacc-l="clListAccounts"
+alias clacc-lp="clListAccountsPaged"
 alias clacc-g="clGetAccount"
 alias clacc-u="clPutAccount"
 alias clacc-d="clDeleteAccount"
