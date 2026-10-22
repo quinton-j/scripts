@@ -543,7 +543,7 @@ function clListAccountsByPartnerId() {
     # Expects env: auth_token, cloud
 
     clListAccounts "&\$filter=partnerId%20eq%20%27$1%27$2" |
-        jq 'map({name,accountId,accountNumber,partnerId,active,organizationId,sapId:.tags.mitel_connect_refs.sap_references_primary_1,createdOn,createdBy})'
+        jq 'map({name,accountId,accountNumber,partnerId,active,organizationId,sapId:.tags.mitel_connect_refs.sap_references_primary_1,createdOn,createdBy}) | sort_by(.createdOn)'
 }
 
 function clListAccountAssociations() {
