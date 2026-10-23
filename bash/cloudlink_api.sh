@@ -75,7 +75,15 @@ alias cldle="jq 'del($clEachRecord | ._links ,._embedded)'"
 alias cldmeta="jq 'del($clEachRecord | .createdOn ,.createdBy ,.modifiedOn ,.modifiedBy)'"
 alias clmin="cldle | cldmeta | cldt | jq 'del($clEachRecord | .avatars)'"
 alias cli2a="jq '._embedded.items // []'"
-alias o2csv="jq --raw-output 'select(length > 0) | (.[0] | keys_unsorted) as \$keys | \$keys, (.[] | [.[]]) | @csv'"
+
+function o2csv {
+  jq --raw-output '
+    select(length > 0)
+    | (reduce (.[] | keys_unsorted[]) as $key ({}; .[$key] = true) | keys_unsorted) as $keys
+    | $keys, (.[] as $record | $keys | map($record[.]))
+    | @csv
+  '
+}
 
 function csv2o {
   jq --raw-input --null-input '
@@ -91,13 +99,31 @@ function csv2o {
   '
 }
 
+function o2flat {
+  jq '
+    def flatten_paths:
+      . as $in
+      | reduce (paths(type != "object" or length == 0) | select(all(.[]; type == "string"))) as $p ({};
+          .[$p | join(".")] = ($in | getpath($p) | if type == "object" or type == "array" then tojson else . end));
+    if type == "array" then map(flatten_paths) else flatten_paths end
+  '
+}
+
 # Auth API
 
 function clAuthOp() {
     # Executes a curl request with the CL auth_token for the given method ($1) auth resource ($2)
     # Expects env: auth_token, cloud
 
-    clOp "$1" "https://authentication$cloud.api.mitel.io/2017-09-01/$2$3"
+    clOp "$1" "https://authentication$cloud.api.mitel.io/2017-09-01/$2${3:-}"
+}
+
+function clAuthListOp() {
+    # Executes a curl GET with the CL auth_token for the given auth subpath ($1), following the
+    # _links.next of each page, and emits the accumulated _embedded.items as a single JSON array
+    # Expects env: auth_token, cloud
+
+    clListOp clAuthOp "$1"
 }
 
 function clGetAuthSpec() {
@@ -131,9 +157,9 @@ function clAuthLoginPassword() {
     # Executes a curl request with the CL auth_token by accepting or soliciting username ($1), accountId ($2), and password ($3)
     # Expects env: cloud, clCredentialsFile
 
-    local username=$1
-    local accountid=$2
-    local password=$3
+    local username=${1:-}
+    local accountid=${2:-}
+    local password=${3:-}
 
     if [ -z "$username" ]; then
         read -r -p 'Username: ' username
@@ -148,7 +174,7 @@ function clAuthLoginPassword() {
         echo
     fi
 
-    tmpDir=${tmpDir:-${LOCALAPPDATA:-$TMP}/${USER:-$USERNAME}-cli} && mkdir --parents "$tmpDir"
+    tmpDir=${tmpDir:-${LOCALAPPDATA:-${TMP:-${TMPDIR:-/tmp}}}/${USER:-${USERNAME:-$(id --user --name)}}-cli} && mkdir --parents "$tmpDir"
     local tmpFile="$tmpDir/token.tmp"
     local credentialsTmpFile="$tmpDir/credentials.tmp"
     local params
@@ -193,7 +219,7 @@ function clListCredentials() {
     # Lists the credentials account for the provided accountId ($1) and optional query params ($2)
     # Expects env: auth_token, cloud
 
-    clAuthOp GET "accounts/$1/credentials$2"
+    clAuthOp GET "accounts/$1/credentials${2:-}"
 }
 
 function clCreateCredential() {
@@ -238,7 +264,7 @@ function clListApplications() {
     # Lists the applications with optional query params ($1)
     # Expects env: auth_token, cloud
 
-    clAuthOp GET "apps$1"
+    clAuthOp GET "apps${1:-}"
 }
 
 function clGetApplication() {
@@ -252,7 +278,7 @@ function clList3rdPartyApplications() {
     # Lists the 3rd party applications with optional query params ($1)
     # Expects env: auth_token, cloud
 
-    clListApplications "?\$top=1000$1" | jq '._embedded.items | map(select(.resource//"" | contains("3pa")))'
+    clListApplications "?\$top=1000${1:-}" | jq '._embedded.items | map(select(.resource//"" | contains("3pa")))'
 }
 
 function clCreate3rdPartyApplication() {
@@ -275,7 +301,7 @@ function clDeleteApplication() {
 
     local body
     body=$(jq --null-input --compact-output \
-        --arg accountId "$2" \
+        --arg accountId "${2:-}" \
         '{$accountId}') || return
 
     clAuthDataOp DELETE "applications/$1" "$body"
@@ -300,7 +326,7 @@ function clListTrustedIssuers() {
     # Includes the global issuers of account '*'
     # Expects env: auth_token, cloud
 
-    clAuthOp GET "trusted-issuers$1"
+    clAuthOp GET "trusted-issuers${1:-}"
 }
 
 function clListAccountTrustedIssuers() {
@@ -308,7 +334,7 @@ function clListAccountTrustedIssuers() {
     # Expects env: auth_token, cloud
 
     local accountId=${1:-'*'}
-    clAuthOp GET "accounts/$accountId/trusted-issuers$2"
+    clAuthOp GET "accounts/$accountId/trusted-issuers${2:-}"
 }
 
 function clGetTrustedIssuer() {
@@ -326,9 +352,9 @@ function clCreateTrustedIssuer() {
     local body=$(jq --null-input --compact-output \
         --arg iss "$1" \
         --arg jwksUri "$2" \
-        --arg displayName "$3" \
-        --arg description "$4" \
-        --arg accountId "$5" \
+        --arg displayName "${3:-}" \
+        --arg description "${4:-}" \
+        --arg accountId "${5:-}" \
         '{$iss ,$jwksUri ,$displayName ,$description ,$accountId} | with_entries(select(.value != ""))')
 
     clAuthDataOp POST "trusted-issuers" "$body"
@@ -362,7 +388,7 @@ function clGetWellKnown() {
     # These routes sit at the host root, outside the versioned base path of clAuthOp
     # Expects env: auth_token, cloud
 
-    clOp GET "https://authentication$cloud.api.mitel.io/.well-known/$1$2"
+    clOp GET "https://authentication$cloud.api.mitel.io/.well-known/$1${2:-}"
 }
 
 export clCredentialsFile=~/.cloudlink/credentials
@@ -405,7 +431,7 @@ function clAdminHeadOp() {
     # Executes a curl request with the CL auth_token for the given auth resource ($1) and optional params ($2)
     # Expects env: auth_token, cloud
 
-    clHeadOp "https://admin$cloud.api.mitel.io/2017-09-01/$1$2"
+    clHeadOp "https://admin$cloud.api.mitel.io/2017-09-01/$1${2:-}"
 }
 
 function clAdminOp() {
@@ -434,11 +460,20 @@ function clAdminListOp() {
     # _links.next of each page, and emits the accumulated _embedded.items as a single JSON array
     # Expects env: auth_token, cloud
 
-    local subpath="$1" separator='?' page next pages pageNumber=0 status=0
+    clListOp clAdminOp "$1"
+}
 
-    # Admin pages an OpenSearch list by offset, which stops at 10,000 results, unless the first request
+function clListOp() {
+    # Executes a curl GET with the CL auth_token through the given op function ($1) for its subpath ($2),
+    # following the _links.next of each page, and emits the accumulated _embedded.items as a single JSON array.
+    # The op function takes a method and a subpath relative to its API version, as clAdminOp and clAuthOp do
+    # Expects env: auth_token, cloud
+
+    local op="$1" subpath="$2" caller="${FUNCNAME[1]:-clListOp}" separator='?' page next pages pageNumber=0 status=0
+
+    # A service pages an OpenSearch list by offset, which stops at 10,000 results, unless the first request
     # has $skipToken. The page size and the token are added unless the caller sets them, and a caller
-    # that pages with $skip keeps it, since admin refuses a request with both
+    # that pages with $skip keeps it, since a service refuses a request with both
     if [[ "$subpath" == *'?'* ]]; then
         separator='&'
     fi
@@ -455,12 +490,12 @@ function clAdminListOp() {
 
     while [[ -n "$subpath" ]]; do
         echo "reading page $((++pageNumber)), $subpath" >&2
-        page=$(clAdminOp GET "$subpath") || { status=1; break; }
+        page=$("$op" GET "$subpath") || { status=1; break; }
 
         # A collection carries _links and _embedded, an error body carries a message instead
         if ! jq --exit-status 'type == "object" and (has("_links") or has("_embedded"))' \
             <<< "$page" > /dev/null 2>&1; then
-            echo "clAdminListOp: page $pageNumber failed, $subpath" >&2
+            echo "$caller: page $pageNumber failed, $subpath" >&2
             jq '.' <<< "$page" >&2 2> /dev/null || echo "${page:-<empty response>}" >&2
             status=1
             break
@@ -470,7 +505,7 @@ function clAdminListOp() {
         next=$(jq --raw-output '._links.next // empty | if type == "object" then .href else . end' <<< "$page")
         # The next link is an absolute API path, the ops take a subpath relative to the API version.
         # Admin leaves the query of the link unencoded, and curl rejects a URL with a space in it
-        subpath=$(sed "s/ /%20/g; s/'/%27/g" <<< "${next#/2017-09-01/}")
+        subpath=$(sed "s/ /%20/g; s/'/%27/g" <<< "${next#/*/}")
     done
 
     (( status == 0 )) && { jq --slurp 'add // []' "$pages" || status=1; }
@@ -483,14 +518,14 @@ function clListAccounts() {
     # Lists accounts with optional query params ($1), following every page, as one JSON array
     # Expects env: auth_token, cloud
 
-    clAdminListOp "accounts?\$expand=tags$1"
+    clAdminListOp "accounts?\$expand=tags${1:-}"
 }
 
 function clListAccountsContainingName() {
     # Lists accounts whose name contains the provided name ($1), with optional query params ($2)
     # Expects env: auth_token, cloud
 
-    if [[ -z "$1" ]]; then
+    if [[ -z "${1:-}" ]]; then
         echo "clListAccountsContainingName: a name is required" >&2
         return 1
     fi
@@ -506,7 +541,7 @@ function clListAccountsContainingName() {
         filter+="substringof(name,%27${encoded}%27)%20or%20"
     done
 
-    clListAccounts "&\$filter=${filter%\%20or\%20}$2"
+    clListAccounts "&\$filter=${filter%\%20or\%20}${2:-}"
 }
 
 function clGetAccount() {
@@ -542,7 +577,7 @@ function clListAccountsByPartnerId() {
     # Lists the accounts for the provided partnerId ($1) and optional query params ($2)
     # Expects env: auth_token, cloud
 
-    clListAccounts "&\$filter=partnerId%20eq%20%27$1%27$2" |
+    clListAccounts "&\$filter=partnerId%20eq%20%27$1%27${2:-}" |
         jq 'map({name,accountId,accountNumber,partnerId,active,organizationId,sapId:.tags.mitel_connect_refs.sap_references_primary_1,createdOn,createdBy}) | sort_by(.createdOn)'
 }
 
@@ -550,7 +585,7 @@ function clListAccountAssociations() {
     # Lists the associations for the provided accountId ($1) and optional query params ($2)
     # Expects env: auth_token, cloud
 
-    clAdminListOp "accounts/$1/associations$2"
+    clAdminListOp "accounts/$1/associations${2:-}"
 }
 
 function clGetAccountAssociation() {
@@ -568,8 +603,8 @@ function clCreateAccountAssociation() {
     local body=$(jq --null-input --compact-output \
         --arg associatedEntityUri "$2" \
         --arg associationType "$3" \
-        --arg displayName "$4" \
-        --arg description "$5" \
+        --arg displayName "${4:-}" \
+        --arg description "${5:-}" \
         '{$associatedEntityUri ,$associationType ,$displayName ,$description} | with_entries(select(.value != ""))')
 
     clAdminDataOp POST "accounts/$1/associations" "$body"
@@ -593,7 +628,7 @@ function clListUsersByRole() {
     # Lists users by role for the provided accountId ($1) and optional query params ($2)
     # Expects env: auth_token, cloud
 
-    clAdminListOp "accounts/$1/users$2" | jq 'group_by(.role) | map({accountId:.[0].accountId,role:.[0].role,users:(. | del(.[].sipPassword)),count:length })'
+    clAdminListOp "accounts/$1/users${2:-}" | jq 'group_by(.role) | map({accountId:.[0].accountId,role:.[0].role,users:(. | del(.[].sipPassword)),count:length })'
 }
 
 function clGetPartner() {
@@ -607,7 +642,7 @@ function clListPartners() {
     # Lists partners with optional query params ($1)
     # Expects env: auth_token, cloud
 
-    clAdminListOp "partners$1"
+    clAdminListOp "partners${1:-}"
 }
 
 function clPutPartner() {
@@ -629,7 +664,7 @@ function clListPolicies() {
     # Lists policies in accountId ($1), and optional query params ($2)
     # Expects env: auth_token, cloud
 
-    clAdminListOp "accounts/$1/policies$2"
+    clAdminListOp "accounts/$1/policies${2:-}"
 }
 
 function clGetPolicy() {
@@ -696,7 +731,7 @@ function clListUsers() {
     local -  # Confines the option change to this function
     set -o pipefail
 
-    clAdminListOp "accounts/$1/users$2" | jq 'map(del(.sipPassword))'
+    clAdminListOp "accounts/$1/users${2:-}" | jq 'map(del(.sipPassword))'
 }
 
 function clGetUser() {
@@ -784,7 +819,7 @@ function clListUserAssociations() {
     # Lists associations for userId ($1) and optional query params ($2)
     # Expects env: auth_token, cloud
 
-    clAdminListOp "users/$1/associations$2" \
+    clAdminListOp "users/$1/associations${2:-}" \
         | jq 'walk(if type == "object" then del(.sipPassword) else . end)'
 }
 
@@ -792,7 +827,7 @@ function clListClients() {
     # Lists the clients for the provided accountId ($1) and optional query params ($2)
     # Expects env: auth_token, cloud
 
-    clAdminListOp "accounts/$1/clients$2"
+    clAdminListOp "accounts/$1/clients${2:-}"
 }
 
 function clGetClient() {
@@ -834,14 +869,14 @@ function clListContacts() {
     # Lists the contacts for the provided accountId ($1) with optional query params ($2)
     # Expects env: auth_token, cloud
 
-    clAdminListOp "accounts/$1/contacts$2"
+    clAdminListOp "accounts/$1/contacts${2:-}"
 }
 
 function clListGroups() {
     # Lists the groups for the provided accountId ($1) and optional query params ($2)
     # Expects env: auth_token, cloud
 
-    clAdminListOp "accounts/$1/groups$2"
+    clAdminListOp "accounts/$1/groups${2:-}"
 }
 
 function clGetGroup() {
@@ -855,7 +890,7 @@ function clListGroupMembers() {
     # Lists the members of the group for the provided accountId ($1) and groupId ($2), with optional query params ($3)
     # Expects env: auth_token, cloud
 
-    clAdminListOp "accounts/$1/groups/$2/members$3"
+    clAdminListOp "accounts/$1/groups/$2/members${3:-}"
 }
 
 function clGetGroupMember() {
@@ -869,14 +904,14 @@ function clListSites() {
     # Lists the sites for the provided accountId ($1) and optional query params ($2)
     # Expects env: auth_token, cloud
 
-    clAdminListOp "accounts/$1/sites$2" | jq 'map(del(._links))'
+    clAdminListOp "accounts/$1/sites${2:-}" | jq 'map(del(._links))'
 }
 
 function clListAdminServices() {
     # Lists the services for the provided accountId ($1) and optional query params ($2)
     # Expects env: auth_token, cloud
 
-    clAdminOp GET "accounts/$1/services$2" \
+    clAdminOp GET "accounts/$1/services${2:-}" \
         | jq '._embedded.items//[] | map(del(._links,.pbx_trunk_password,.authentication,.pbx.connection_password))'
 }
 
@@ -956,7 +991,7 @@ function clDirectorOp() {
     # Executes a curl get request with the CL auth_token for the given method ($1) director subresource ($2)
     # Expects env: auth_token, cloud
 
-    clOp "$1" "https://director$cloud.api.mitel.io/2018-07-01/$2$3"
+    clOp "$1" "https://director$cloud.api.mitel.io/2018-07-01/$2${3:-}"
 }
 
 function clGetDirectorSpec() {
@@ -977,7 +1012,7 @@ function clListIdentities() {
     # Lists identities with the id ($1)
     # Expects env: auth_token, cloud
 
-    clDirectorOp GET "identities?\$expand=null$1"
+    clDirectorOp GET "identities?\$expand=null${1:-}"
 }
 
 function clListDirectorServices() {
@@ -1088,7 +1123,7 @@ function clChatOp() {
     # Executes a curl get request with the CL auth_token for the given method ($1) chat subresource ($2)
     # Expects env: auth_token, cloud
 
-    clOp "$1" "https://chat$cloud.api.mitel.io/2017-09-01/$2$3"
+    clOp "$1" "https://chat$cloud.api.mitel.io/2017-09-01/$2${3:-}"
 }
 
 function clGetChatSpec() {
@@ -1143,7 +1178,7 @@ function clGetConversations() {
     # Gets user conversations for the logged in user with optional query params ($1)
     # Expects env: auth_token, cloud
 
-    clChatOp GET "conversations$1"
+    clChatOp GET "conversations${1:-}"
 }
 
 function clPutAccountTag() {
@@ -1197,7 +1232,7 @@ function clListAttachments() {
     # Lists attachments for the given conversationId ($1) with optional query params ($2)
     # Expects env: auth_token, cloud
 
-    clChatOp GET "conversations/$1/attachments$2"
+    clChatOp GET "conversations/$1/attachments${2:-}"
 }
 
 function clPutAttachment() {
@@ -1246,7 +1281,7 @@ function clGetSignedAttachment() {
     # The signed URL carries its own credentials, so the CL auth_token is not sent
     # Expects env: auth_token, cloud
 
-    local url=$(clGetAttachmentMeta "$1" "$2" "$3" | jq --raw-output '._embedded.signedUrl.url')
+    local url=$(clGetAttachmentMeta "$1" "$2" "${3:-}" | jq --raw-output '._embedded.signedUrl.url')
 
     curl --silent --dump-header - --remote-name --remote-header-name --create-dirs \
         --output-dir "${4:-.}" "$url"
@@ -1296,7 +1331,7 @@ function clEventHistoryQuery() {
     # Executes a queries the event history with the CL auth_token by source ($1), subject ($2), date exceeding ($3) and optional further filters ($4)
     # Expects env: auth_token, cloud
 
-    clAnalyticsOp GET "events-records?\$filter=source%20eq%20'$1'%20and%20subject%20eq%20'$2'%20and%20occurredOn%20gt%20'$3'$4"
+    clAnalyticsOp GET "events-records?\$filter=source%20eq%20'$1'%20and%20subject%20eq%20'$2'%20and%20occurredOn%20gt%20'$3'${4:-}"
 }
 
 alias clehis-l="clEventHistoryQuery"
@@ -1308,7 +1343,7 @@ function clNotifyOp() {
     # Executes a curl get request with the CL auth_token for the given method ($1) subresource ($2) and optional query params ($3)
     # Expects env: auth_token, cloud
 
-    clOp "$1" "https://notifications$cloud.api.mitel.io/2017-09-01/$2$3"
+    clOp "$1" "https://notifications$cloud.api.mitel.io/2017-09-01/$2${3:-}"
 }
 
 function clGetNotifySpec() {
@@ -1322,7 +1357,7 @@ function clGetNotifySubscriptions() {
     # Gets notification subscription with optional query params ($1)
     # Expects env: auth_token, cloud
 
-    clNotifyOp GET subscriptions "$1"
+    clNotifyOp GET subscriptions "${1:-}"
 }
 
 function clDeleteNotifySubscription() {
@@ -1368,14 +1403,14 @@ function clListComponents() {
     # List components with optional query params ($1)
     # Expects env: auth_token, cloud
 
-    clSysManOp GET "components$1"
+    clSysManOp GET "components${1:-}"
 }
 
 function clListPlatforms() {
     # List platforms with optional query params ($1)
     # Expects env: auth_token, cloud
 
-    clSysManOp GET "platforms$1"
+    clSysManOp GET "platforms${1:-}"
 }
 
 function clGetPlatform() {
@@ -1448,7 +1483,7 @@ function clListPresentities() {
     # List the presenties in the account with optional query params ($1)
     # Expects env: auth_token, cloud
 
-    clPresenceOp GET "presentities$1"
+    clPresenceOp GET "presentities${1:-}"
 }
 
 
@@ -1456,7 +1491,7 @@ function clGetPresentity() {
     # Gets the presence for the provided presentityId ($1) and optional query params ($2)
     # Expects env: auth_token, cloud
 
-    clPresenceOp GET "presentities/$1$2"
+    clPresenceOp GET "presentities/$1${2:-}"
 }
 
 function clListSources() {
@@ -1477,7 +1512,7 @@ function clListAggregateFilters() {
     # Lists the aggregate filters with optional query params ($1)
     # Expects env: auth_token, cloud
 
-    clPresenceOp GET "aggregate-filters$1"
+    clPresenceOp GET "aggregate-filters${1:-}"
 }
 
 function clPatchSource() {
@@ -1586,7 +1621,7 @@ function clListActivities() {
     # Lists activities with optional query params ($1)
     # Expects env: auth_token, cloud
 
-    clWorkflowOp GET "activities$1"
+    clWorkflowOp GET "activities${1:-}"
 }
 
 function clGetActivity() {
