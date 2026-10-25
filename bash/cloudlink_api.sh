@@ -78,7 +78,8 @@ alias cli2a="jq '._embedded.items // []'"
 
 function o2csv {
   jq --raw-output '
-    select(length > 0)
+    if type == "array" then . else [.] end
+    | select(length > 0)
     | (reduce (.[] | keys_unsorted[]) as $key ({}; .[$key] = true) | keys_unsorted) as $keys
     | $keys, (.[] as $record | $keys | map($record[.]))
     | @csv
@@ -101,10 +102,13 @@ function csv2o {
 
 function o2flat {
   jq '
+    def path_key:
+      reduce .[] as $segment (""; if ($segment | type) == "number" then . + "[]" elif . == "" then $segment else . + "." + $segment end);
     def flatten_paths:
       . as $in
-      | reduce (paths(type != "object" or length == 0) | select(all(.[]; type == "string"))) as $p ({};
-          .[$p | join(".")] = ($in | getpath($p) | if type == "object" or type == "array" then tojson else . end));
+      | reduce (paths((type != "object" and type != "array") or length == 0) as $p | {key: ($p | path_key), value: ($in | getpath($p))}) as $leaf ({};
+          if $leaf.key | contains("[]") then .[$leaf.key] += [$leaf.value] else .[$leaf.key] = $leaf.value end)
+      | map_values(if type == "object" or type == "array" then tojson else . end);
     if type == "array" then map(flatten_paths) else flatten_paths end
   '
 }
@@ -212,6 +216,30 @@ function clAuthLoginPassword() {
     fi
 
     rm --force "$tmpFile"
+    clAuthOp GET token | jq '.'
+}
+
+function clAuthAssumeRole() {
+    # Replaces the CL auth_token with a token for the provided role ($1), and optional accountId ($2) and policyId ($3)
+    # The credentials file is left untouched, so cltok-set restores the token of the login
+    # Expects env: auth_token, cloud
+
+    local body response
+    body=$(jq --null-input --compact-output \
+        --arg role "$1" \
+        --arg accountId "${2:-}" \
+        --arg policyId "${3:-}" \
+        '{$role ,$accountId ,$policyId} | with_entries(select(.value != ""))') || return
+
+    response=$(clAuthDataOp POST "assume-role/token" "$body")
+
+    if ! jq --exit-status '.access_token | strings' <<< "$response" > /dev/null 2>&1; then
+        echo "clAuthAssumeRole: assume role failed, auth_token unchanged" >&2
+        jq 'del(.access_token ,.refresh_token)' <<< "$response" >&2 2> /dev/null || echo "$response" >&2
+        return 1
+    fi
+
+    auth_token=$(jq --raw-output '.access_token' <<< "$response")
     clAuthOp GET token | jq '.'
 }
 
@@ -323,7 +351,7 @@ function clGetIdentityProvider() {
 
 function clListTrustedIssuers() {
     # Lists the trusted issuers for the account of the token, with optional query params ($1)
-    # Includes the global issuers of account '*'
+    # Returns the same issuers as clListAccountTrustedIssuers for that account. A global token reads account '*'
     # Expects env: auth_token, cloud
 
     clAuthOp GET "trusted-issuers${1:-}"
@@ -394,6 +422,7 @@ function clGetWellKnown() {
 export clCredentialsFile=~/.cloudlink/credentials
 alias cltok-g="clAuthOp GET token"
 alias cltok-lp="clAuthLoginPassword"
+alias cltok-ar="clAuthAssumeRole"
 alias cltok-clip='printf %s "$auth_token" | xclip -selection clipboard'
 alias cltok-set='auth_token=$(jq --raw-output ".[\"${cloud:1}\"].access_token" "$clCredentialsFile")'
 alias clauth-spec="clGetAuthSpec"
@@ -556,6 +585,20 @@ function clDeleteAccount() {
     # Expects env: auth_token, cloud
 
     clAdminOp DELETE "accounts/$1?hard=true"
+}
+
+function clPostAccount() {
+    # Creates an account with name ($1), and optional JSON body of other fields ($2)
+    # The partnerId defaults to the partner of the token. The name takes precedence over the body
+    # Expects env: auth_token, cloud
+
+    local body
+    body=$(jq --null-input --compact-output \
+        --arg name "$1" \
+        --argjson fields "${2:-null}" \
+        '($fields // {}) + {$name}') || return
+
+    clAdminDataOp POST "accounts" "$body"
 }
 
 function clPutAccount() {
@@ -924,6 +967,7 @@ function clHeadScim() {
 
 alias clacc-l="clListAccounts"
 alias clacc-g="clGetAccount"
+alias clacc-c="clPostAccount"
 alias clacc-u="clPutAccount"
 alias clacc-d="clDeleteAccount"
 alias clacc-gbo="clGetAccountByOrganizationId"
