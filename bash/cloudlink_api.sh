@@ -113,6 +113,22 @@ function o2flat {
   '
 }
 
+function hal2o {
+  jq '
+    def unwrap:
+      if type == "array" then
+        map(unwrap)
+      elif type != "object" then
+        .
+      elif (._embedded | type) == "object" and (._embedded | has("items")) then
+        ._embedded.items | map(unwrap)
+      else
+        (del(._links ,._embedded) | map_values(unwrap)) + ((._embedded // {}) | map_values(unwrap))
+      end;
+    unwrap
+  '
+}
+
 # Auth API
 
 function clAuthOp() {
@@ -1493,11 +1509,46 @@ function clGetBillingSpec() {
     clBillingOp GET "_spec"
 }
 
-alias clbill-ll="clBillingOp GET licenses"
-alias clbill-ls="clBillingOp GET subscriptions"
-alias clbill-lps="clBillingOp GET partner-subscriptions"
-alias clbill-lu="clBillingOp GET users"
-alias clbill-la="clBillingOp GET accounts"
+function clListBillingLicenses() {
+    # Lists billing licenses with optional query params ($1)
+    # Expects env: auth_token, cloud
+
+    clBillingOp GET "licenses${1:-}"
+}
+
+function clListBillingSubscriptions() {
+    # Lists billing subscriptions with optional query params ($1)
+    # Expects env: auth_token, cloud
+
+    clBillingOp GET "subscriptions${1:-}"
+}
+
+function clListBillingPartnerSubscriptions() {
+    # Lists billing partner subscriptions with optional query params ($1)
+    # Expects env: auth_token, cloud
+
+    clBillingOp GET "partner-subscriptions${1:-}"
+}
+
+function clListBillingUsers() {
+    # Lists billing users with optional query params ($1)
+    # Expects env: auth_token, cloud
+
+    clBillingOp GET "users${1:-}"
+}
+
+function clListBillingAccounts() {
+    # Lists billing accounts with optional query params ($1)
+    # Expects env: auth_token, cloud
+
+    clBillingOp GET "accounts${1:-}"
+}
+
+alias clblic-l="clListBillingLicenses"
+alias clbsub-l="clListBillingSubscriptions"
+alias clbpsub-l="clListBillingPartnerSubscriptions"
+alias clbuser-l="clListBillingUsers"
+alias clbacc-l="clListBillingAccounts"
 alias clbilling-spec="clGetBillingSpec"
 
 # Presence API
