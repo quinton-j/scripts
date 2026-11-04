@@ -15,6 +15,7 @@ function jiraRequest() {
     # Prints the response body. On an HTTP error it prints the body as well, writes the status and Jira's own error
     # messages to stderr, and fails, so a caller can test the exit status instead of the body
     # With --output, curl writes the body to that file instead, so an HTTP error reads Jira's messages from the file
+    # With --form, curl sets the multipart content type and its boundary, so the JSON content type is left out
     # Expects env: jira_url, jira_auth
 
     local response
@@ -24,14 +25,16 @@ function jiraRequest() {
     local output=''
     local previous=''
     local argument
+    local contentType=(--header 'Content-Type: application/json')
 
     for argument in "${@:3}"; do
         [ "$previous" = '--output' ] && output=$argument
+        [ "$argument" = '--form' ] && contentType=()
         previous=$argument
     done
 
     response=$(curl --silent --show-error --write-out '\n%{http_code}' \
-        --header 'Content-Type: application/json' --header "Authorization: Basic $jira_auth" \
+        "${contentType[@]}" --header "Authorization: Basic $jira_auth" \
         --request "$1" "$2" "${@:3}") || curlStatus=$?
 
     status=${response##*$'\n'}
@@ -348,8 +351,27 @@ function jiraDownloadAttachment() {
     }
 }
 
+function jiraAddAttachment() {
+    # Attaches a file ($2) to an issue ($1), under an optional file name ($3) or else its own. Prints the new
+    # attachments, each with its .id
+    # Jira rejects the upload without the X-Atlassian-Token header, its guard against cross-site requests
+    # Expects env: jira_url, jira_auth
+
+    jiraRequest POST "$jira_url/rest/api/2/issue/$1/attachments" --header 'X-Atlassian-Token: no-check' \
+        --form "file=@$2;filename=${3:-$(basename "$2")}"
+}
+
+function jiraDeleteAttachment() {
+    # Deletes an attachment by id ($1)
+    # Expects env: jira_url, jira_auth
+
+    jiraOp "DELETE" "attachment/$1"
+}
+
 alias jira-la='jiraListAttachments'
 alias jira-da='jiraDownloadAttachment'
+alias jira-aa='jiraAddAttachment'
+alias jira-rma='jiraDeleteAttachment'
 
 # Remote links
 
