@@ -1712,20 +1712,44 @@ function clGetWorkflowSpec() {
     clWorkflowOp GET "_spec"
 }
 
-function clListActivities() {
+function clListWorkflowActivities() {
     # Lists activities with optional query params ($1)
     # Expects env: auth_token, cloud
 
     clWorkflowOp GET "activities${1:-}"
 }
 
-function clGetActivity() {
+function clGetWorkflowActivity() {
     # Gets activity for the provided activityId ($1)
     # Expects env: auth_token, cloud
 
     clWorkflowOp GET "activities/$1"
 }
 
-alias clact-l="clListActivities"
-alias clact-g="clGetActivity"
-alias clworkflow-spec="clGetWorkflowSpec"
+function clListWorkflowIntegrations() {
+    # Lists integrations with optional query params ($1)
+    # Expects env: auth_token, cloud
+
+    clWorkflowOp GET "integrations${1:-}"
+}
+
+function clListWorkflowConnections() {
+    # Lists integration connections with optional query params ($1)
+    # Expects env: auth_token, cloud
+
+    clWorkflowOp GET "integrations/connections${1:-}"
+}
+
+function clListWorkflowTags() {
+    # Lists tags with optional query params ($1)
+    # Expects env: auth_token, cloud
+
+    clWorkflowOp GET "tags${1:-}"
+}
+
+alias clwfact-l="clListWorkflowActivities"
+alias clwfact-g="clGetWorkflowActivity"
+alias clwfint-l="clListWorkflowIntegrations"
+alias clwfconn-l="clListWorkflowConnections"
+alias clwftag-l="clListWorkflowTags"
+alias clwf-spec="clGetWorkflowSpec"
