@@ -597,10 +597,11 @@ function clGetAccount() {
 }
 
 function clDeleteAccount() {
-    # Deletes the account for the provided accountId ($1)
+    # Deletes the account for the provided accountId ($1) and hard flag ($2)
+    # Pass true for a hard delete, or false for a soft delete
     # Expects env: auth_token, cloud
 
-    clAdminOp DELETE "accounts/$1?hard=true"
+    clAdminOp DELETE "accounts/$1?hard=${2:?hard flag required: true or false}"
 }
 
 function clPostAccount() {
@@ -712,11 +713,12 @@ function clPutPartner() {
 }
 
 function clDeletePartner() {
-    # Deletes the partner for the provided partnerId ($1)
+    # Deletes the partner for the provided partnerId ($1) and hard flag ($2)
+    # Pass true for a hard delete, or false for a soft delete
     # Cascades to the partner's accounts
     # Expects env: auth_token, cloud
 
-    clAdminOp DELETE "partners/$1?hard=true"
+    clAdminOp DELETE "partners/$1?hard=${2:?hard flag required: true or false}"
 }
 
 function clListPolicies() {
