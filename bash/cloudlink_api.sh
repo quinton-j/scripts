@@ -1546,11 +1546,27 @@ function clListBillingAccounts() {
     clBillingOp GET "accounts${1:-}"
 }
 
+function clListBillingTenants() {
+    # Lists the Zoom and UnifyPhone tenants of the token's account
+    # Expects env: auth_token, cloud
+
+    clBillingOp GET "tenants"
+}
+
+function clGetBillingTenant() {
+    # Gets the tenant for the provided tenantId ($1), with its status expanded
+    # Expects env: auth_token, cloud
+
+    clBillingOp GET "tenants/$1?\$expand=status"
+}
+
 alias clblic-l="clListBillingLicenses"
 alias clbsub-l="clListBillingSubscriptions"
 alias clbpsub-l="clListBillingPartnerSubscriptions"
 alias clbuser-l="clListBillingUsers"
 alias clbacc-l="clListBillingAccounts"
+alias clbten-l="clListBillingTenants"
+alias clbten-g="clGetBillingTenant"
 alias clbilling-spec="clGetBillingSpec"
 
 # Presence API
